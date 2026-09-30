@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+target/
+src-tauri/resources/vlc/
+src-tauri/gen/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+output/
+*.log
+.playwright-cli/
+*.sqlite3*
+artifacts/

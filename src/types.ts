@@ -1,0 +1,74 @@
+export interface Programme {
+  channelId: string;
+  title: string;
+  description: string;
+  start: number;
+  end: number;
+  category: string;
+}
+export interface Channel {
+  id: string;
+  name: string;
+  group: string;
+  logo: string | null;
+  epgId: string;
+  streamId: number | null;
+  favorite: boolean;
+  lastWatched: number | null;
+  now: Programme | null;
+  next: Programme | null;
+}
+export interface ChannelPage {
+  channels: Channel[];
+  total: number;
+  offset: number;
+}
+export interface Group {
+  name: string;
+  count: number;
+}
+export interface Query {
+  search: string;
+  group: string | null;
+  favoritesOnly: boolean;
+  historyOnly: boolean;
+  offset: number;
+  limit: number;
+}
+export interface SyncProgress {
+  phase: string;
+  active: boolean;
+  message: string;
+}
+export interface AppInfo {
+  configured: boolean;
+  connectionKind: string | null;
+  server: string | null;
+  source: string | null;
+  channelCount: number;
+  programmeCount: number;
+  channelsUpdated: number | null;
+  guideUpdated: number | null;
+  playerAvailable: boolean;
+  playerError: string | null;
+  progress: SyncProgress;
+  version: string;
+}
+export interface PlayerStatus {
+  state: string;
+  channelId: string | null;
+  volume: number;
+  width: number;
+  height: number;
+  decodedVideo: number;
+  decodedAudio: number;
+}
+export interface Connection {
+  kind: string;
+  baseUrl: string;
+  username: string;
+  password: string;
+  playlistUrl: string;
+  epgUrl: string;
+}
+export type View = "live" | "guide" | "favorites" | "history" | "settings";
