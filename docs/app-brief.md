@@ -10,4 +10,4 @@ Observed scale: the initial live Xtream catalog returned 54,745 channels. The co
 
 Acceptance: native MPEG-TS playback with decoded video/audio, navigation/search/group filtering, favorites/history after restart, correct programme times, failed-refresh preservation, responsive 1024px and 1440px layouts, Rust/TypeScript checks, production executable launch without Vite and a packaged installer.
 
-Apple deliverable in this phase: a portable core and documented integration boundary. Native Apple apps, bindings and device tests are deliberately deferred to the Mac phase requested by the user.
+The Windows phase shipped in 0.1.0. The Mac phase in 0.2.0 adds native SwiftUI iOS/tvOS shells, an owned-JSON C boundary around the same Rust core, Keychain credentials and AVPlayer HLS playback. Both platforms have TestFlight distribution targets. Physical Apple device playback and remote testing remain the next acceptance checks; see apple-release.md and verification.md.

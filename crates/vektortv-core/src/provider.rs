@@ -45,6 +45,13 @@ impl Connection {
         })
     }
     pub fn stream_url(&self, id: i64) -> Result<String> {
+        self.live_url(id, "ts")
+    }
+    /// Native Apple playback uses an HLS playlist rather than a continuous TS stream.
+    pub fn hls_url(&self, id: i64) -> Result<String> {
+        self.live_url(id, "m3u8")
+    }
+    fn live_url(&self, id: i64, extension: &str) -> Result<String> {
         let mut url = validate_url(&self.base_url)?;
         let mut segments = url
             .path_segments_mut()
@@ -54,7 +61,7 @@ impl Connection {
             .push("live")
             .push(&self.username)
             .push(&self.password)
-            .push(&format!("{id}.ts"));
+            .push(&format!("{id}.{extension}"));
         drop(segments);
         Ok(url.to_string())
     }
@@ -104,7 +111,7 @@ pub struct Catalog {
 
 pub fn client() -> Result<reqwest::Client> {
     reqwest::Client::builder()
-        .user_agent("VektorTV/0.1.0")
+        .user_agent(concat!("VektorTV/", env!("CARGO_PKG_VERSION")))
         .connect_timeout(Duration::from_secs(15))
         .timeout(Duration::from_secs(600))
         .build()

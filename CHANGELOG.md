@@ -2,6 +2,22 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.2.0] - 2026-09-30
+
+### Added
+
+- Native SwiftUI applications for iOS/iPadOS 18+ and tvOS 18+, sharing the Rust IPTV core through a thread-safe C bridge.
+- AVKit/AVPlayer HLS playback, iOS inline/full-screen playback, Apple TV full-screen playback and remote Back/Menu handling.
+- Apple channel search, group filters, favorites/history, now/next and channel schedules with background XMLTV imports and short-guide fallback.
+- Keychain account storage, explicit simulator-only local credential injection, native icons and privacy manifest.
+- Shared Xcode schemes, automatic signing configuration, TestFlight export options and Xcode Cloud Rust setup scripts.
+
+### Changed
+
+- Xtream supports separate HLS and MPEG-TS URLs for native Apple and Windows playback.
+- Apple catalog imports commit the namespace and guide invalidation atomically; stale account responses cannot restore a disconnected account.
+- Ignore the extensionless local credential file and Apple build/user artifacts.
+
 ## [0.1.0] - 2026-09-30
 
 ### Fixed

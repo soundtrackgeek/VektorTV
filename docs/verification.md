@@ -1,4 +1,22 @@
-# Verification — 0.1.0
+# Verification
+
+## Native Apple apps — 0.2.0
+
+Local checks on macOS on 2026-09-30:
+
+- iOS and tvOS simulator builds succeeded. Released Xcode 26.6 built device archives for both platforms, with automatic App Store distribution signing at export.
+- Thirteen Rust tests passed, including C-boundary ownership, credential-safe errors, encoded HLS paths, account isolation, disconnect behavior and atomic catalog/guide rollback. Core/bridge Clippy passed with warnings denied; workspace formatting passed.
+- The existing frontend's ESLint, two tests, TypeScript check and production Vite build passed. `npm ci` reported zero vulnerabilities.
+- Real account import loaded **54,745 channels**. The iOS background XMLTV import cached **428,982 programme records**; now/next and NRK schedules displayed local-time programme details.
+- **NOR| NRK1 HD** visibly rendered live video through AVPlayer HLS on the iPhone simulator. Inline playback, full-screen entry/exit, stop, favorite changes and schedule presentation were exercised. Audio was not assessed by listening.
+- Reinstall/relaunch restored Keychain credentials and the catalog. The tvOS app also restored its catalog and displayed the native interface. Simulator input automation could not complete tvOS playback/remote verification; these checks require TestFlight testing on an Apple TV.
+- A favorite and two history records persisted across iOS rebuild/relaunch. tvOS cached 429,355 guide records.
+- Both **0.2.0 (2)** release packages uploaded successfully, completed Apple processing and show **Testing** in the internal TestFlight group. The account holder's invitation is recorded as **Invited**.
+- Release apps contain no bundled development account. The ignored local credential file is read only by the explicit simulator launcher; native account credentials stay in Keychain and authenticated stream URLs stay in memory.
+
+Physical-device playback, Siri Remote hardware, AirPlay, Picture in Picture, background behavior, long sessions and all provider codecs/channels remain unverified. See [apple-release.md](apple-release.md) for distribution and device-testing details.
+
+## Windows — 0.1.0
 
 Local checks performed on Windows on 2026-09-30. Credentials were read from the ignored `.env` and saved through Windows Credential Manager. Authenticated URLs and secrets were omitted from logs and artifacts.
 
@@ -38,6 +56,6 @@ Local checks performed on Windows on 2026-09-30. Credentials were read from the 
 
 ## Coverage limits
 
-This is local Windows verification, not a complete provider/channel/codec matrix. HLS, every channel variant, prolonged playback, provider outages, Windows 10, another clean Windows machine and installer upgrade/uninstall are not separately verified. The installer is unsigned. Native iOS/tvOS apps, Swift bindings and Apple device playback belong to the later Mac phase.
+This is local Windows verification, not a complete provider/channel/codec matrix. HLS, every channel variant, prolonged playback, provider outages, Windows 10, another clean Windows machine and installer upgrade/uninstall are not separately verified. The installer is unsigned. Native Apple verification is recorded above.
 
 Preview screenshots are generated under ignored `artifacts/`; they use illustrative data. The source tree contains no provider credentials, databases, VLC binaries or generated installer.

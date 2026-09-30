@@ -68,12 +68,43 @@ impl Store {
             })
     }
     pub fn replace_channels(&mut self, channels: &[Channel], updated_at: i64) -> Result<()> {
+        self.replace_channels_impl(channels, updated_at, None)
+    }
+    /// Commit the account namespace and its catalog together for native shells.
+    pub fn replace_catalog(
+        &mut self,
+        channels: &[Channel],
+        updated_at: i64,
+        namespace: &str,
+    ) -> Result<()> {
+        self.replace_channels_impl(channels, updated_at, Some(namespace))
+    }
+    fn replace_channels_impl(
+        &mut self,
+        channels: &[Channel],
+        updated_at: i64,
+        namespace: Option<&str>,
+    ) -> Result<()> {
         if channels.is_empty() {
             return Err(Error::Invalid(
                 "An empty import cannot replace the channel library.".into(),
             ));
         }
         let tx = self.connection.transaction()?;
+        if let Some(namespace) = namespace {
+            let old: Option<String> = tx
+                .query_row(
+                    "SELECT value FROM metadata WHERE key='namespace'",
+                    [],
+                    |row| row.get(0),
+                )
+                .optional()?;
+            if old.as_deref() != Some(namespace) {
+                tx.execute("DELETE FROM programmes", [])?;
+                tx.execute("DELETE FROM metadata WHERE key='guide_updated'", [])?;
+            }
+            tx.execute("INSERT INTO metadata VALUES ('namespace',?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [namespace])?;
+        }
         tx.execute("DELETE FROM channels", [])?;
         {
             let mut insert = tx.prepare("INSERT INTO channels VALUES (?1,?2,?3,?4,?5,?6,?7,?8)")?;
@@ -357,5 +388,35 @@ mod tests {
             store.metadata("channels_updated").unwrap().as_deref(),
             Some("10")
         );
+    }
+    #[test]
+    fn account_catalog_and_guide_switch_commit_atomically() {
+        let mut store = Store::open(":memory:").unwrap();
+        store.replace_catalog(&channels(), 10, "account-a").unwrap();
+        let programme = Programme {
+            channel_id: "a".into(),
+            title: "Old guide".into(),
+            description: String::new(),
+            start: 10,
+            end: 100,
+            category: String::new(),
+        };
+        store.replace_programmes(&[programme], 10).unwrap();
+        let duplicate = channels()[0].clone();
+        assert!(store
+            .replace_catalog(&[duplicate.clone(), duplicate], 20, "account-b")
+            .is_err());
+        assert_eq!(
+            store.metadata("namespace").unwrap().as_deref(),
+            Some("account-a")
+        );
+        assert_eq!(store.programme_count().unwrap(), 1);
+        store.replace_catalog(&channels(), 30, "account-b").unwrap();
+        assert_eq!(
+            store.metadata("namespace").unwrap().as_deref(),
+            Some("account-b")
+        );
+        assert_eq!(store.programme_count().unwrap(), 0);
+        assert_eq!(store.metadata("guide_updated").unwrap(), None);
     }
 }

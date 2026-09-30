@@ -4118,7 +4118,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vektortv"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "dotenvy",
@@ -4134,8 +4134,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "vektortv-apple"
+version = "0.2.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "vektortv-core",
+]
+
+[[package]]
 name = "vektortv-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "chrono",
