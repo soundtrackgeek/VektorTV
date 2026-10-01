@@ -2,7 +2,16 @@
 
 ## Countries release — 0.5.0 (6)
 
-The project now targets **0.5.0 (6)** for both platforms. Country UI integration tests passed on iPhone and Apple TV. Release archives, uploads and VektorTV Internal availability are being verified; no availability is claimed yet. Previous release evidence follows below.
+**0.5.0 (6) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group’s Builds page was visibly verified as **Testing** for both platforms on 2026-10-01. Both native Apple targets use **0.5.0 (6)**. Released Xcode 26.6 (17F113) built the iOS and tvOS Release archives on 2026-10-01, and both automatic App Store distribution exports/uploads succeeded.
+
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.5.0 (6) | 2026-10-01 20:37:42 | Testing — VektorTV Internal | [iOS build 6](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/66b5925e-158a-44bb-9c19-0b57e3822af3) |
+| tvOS | 0.5.0 (6) | 2026-10-01 20:36:39 | Testing — VektorTV Internal | [tvOS build 6](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/b5c515d7-31b9-4a2d-9f65-1d0e6690ae05) |
+
+The release adds country flag tiles, country favorites, provider groups within countries and All channels A–Z across every maintained app. Ten native UI integration checks passed across iPhone, iPad and Apple TV, including real HLS playback and favorite persistence. See [verification.md](verification.md).
+
+Archives/exports: `apps/apple/build/0.5.0-6/`. Local logs: `/tmp/vektortv-050-archive-ios.log`, `/tmp/vektortv-050-archive-tvos.log`, `/tmp/vektortv-050-upload-ios.log`, `/tmp/vektortv-050-upload-tvos.log`. Both archive manifests confirm version 0.5.0/build 6. Apple processing completed and both builds were confirmed available in VektorTV Internal at approximately 20:41 Europe/Oslo.
 
 ## Previous released builds
 
