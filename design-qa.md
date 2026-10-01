@@ -50,3 +50,33 @@ Physical TV viewing distance, Siri Remote hardware, physical-device audio, Voice
 No P3 item is required for this release. Further TV spacing adjustments should be based on physical viewing-distance testing.
 
 final result: passed
+
+
+## Tauri desktop — 0.4.0
+
+Date: 2026-10-01. The approved reference is now implemented in the shared Windows/macOS React interface.
+
+**Evidence and comparison**
+
+- Source: `docs/design/cinema-lounge-reference.png`, 1672 × 941 pixels. The source was displayed together with the actual browser screenshot at 1672 × 941 CSS pixels / 1×, and again with the final native Mac Release screenshot. Both comparisons were made in the same image input, not from memory.
+- Mac capture: 2880 × 1884 pixels, approximately 1440 × 942 points at 2× including native title bar, real NRK1 playback and real current/next metadata. Mac captures also show NRK2 playback, guide, fullscreen and post-stop state. These computer-use captures are retained in the chat, rather than committed as image files. The screen-sharing indicator belongs to macOS, not VektorTV.
+- Browser preview uses clearly labelled illustrative data and a neutral player placeholder; it cannot play streams. Native captures establish that the large media region is a real player. The runtime video/programme/favorite/history state naturally differs from the concept's fictional programme and landscape frame.
+- Responsive checks: 1024 × 680 desktop minimum and 402 × 874 compact preview. The final minimum-size viewing pane fits without inner vertical overflow. The compact layout uses one scrollable column, with picture/actions first. Screenshots were inspected at their respective densities; no cross-density pixel-equality claim is made.
+
+**Five fidelity surfaces**
+
+1. **Typography:** spaced VEKTOR TV wordmark, quiet header labels, 27–38-pixel programme title and lower-contrast metadata preserve the concept hierarchy. SF/Segoe UI system fonts suit desktop platforms. Channel labels increased to 16 pixels after review; long labels truncate within their own rows and retain full accessible names.
+2. **Spacing/layout:** compact header, bounded channel sidebar, separators and programme details follow the concept. A true 16:9 picture, constrained by available height, replaces its very wide image. Search/groups/history and extra desktop playback controls are intentional functional additions. Buttons remain below native video so the overlay cannot intercept them.
+3. **Color:** charcoal `#0c1013`, panel `#171d22`, teal `#64dfc5`, light primary text and restrained separators. Active channel/navigation/progress use teal; keyboard focus uses a light outline. A solid light Full screen button matches the implemented native Apple treatment.
+4. **Media/assets:** native libVLC video preserves aspect ratio, with provider logos in bounded slots and Lucide fallbacks. No screenshot, generated page raster or decorative landscape substitutes for live playback. Mac library loading and title-bar alignment were corrected after testing actual packaged apps.
+5. **Copy/content:** Watch, TV Guide, Your channels, Full screen and Up next retain the selected direction. Real channel names replace numbered fictional programme rows. Metadata/progress come from programme timestamps; unavailable, loading and stopped states describe actual player conditions.
+
+**Interaction and corrections**
+
+Browser checks passed navigation, guide details/Watch, favorites, search/group filtering, empty state, Settings and fullscreen/Escape; console had no warnings/errors. Native Mac checks passed visible playback, channel switching, pause/resume, mute/unmute, favorite round-trip, guide/Watch return, fullscreen/Escape, Stop, history persistence and safe shutdown. Two material native issues were fixed: signed VLC-library loading and the title-bar video offset. Final native playback and reference comparison were repeated after the offset fix.
+
+**Boundaries**
+
+No P0/P1/P2 visual differences remain in the inspected Watch layouts. Windows runtime rendering has not been inspected in this Mac session; its shared UI and native code compile and its installer builds in CI. Physical Windows playback, Intel Mac behavior, accessibility text/VoiceOver and multi-monitor changes require device testing. Mac fullscreen captures include system capture/chrome margins; the picture and bottom controls remain visible and interactive. Distribution evidence is in `docs/verification.md` and `docs/apple-release.md`.
+
+final result: passed for the inspected browser and Mac layouts; Windows runtime remains unverified.
