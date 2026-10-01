@@ -51,7 +51,7 @@ for name, sdk, family, deployment, assets in [
         PRODUCT_NAME="$(TARGET_NAME)", PRODUCT_BUNDLE_IDENTIFIER="com.soundtrackgeek.vektortv",
         DEVELOPMENT_TEAM="3L5769JKCM", CODE_SIGN_STYLE="Automatic", SDKROOT=sdk,
         SUPPORTED_PLATFORMS="iphoneos iphonesimulator" if sdk == "iphoneos" else "appletvos appletvsimulator",
-        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.5.0", CURRENT_PROJECT_VERSION="6",
+        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.6.0", CURRENT_PROJECT_VERSION="7",
         INFOPLIST_FILE=f"Resources/{assets}/Info.plist", SWIFT_VERSION="5.0",
         SWIFT_STRICT_CONCURRENCY="complete", SWIFT_OBJC_BRIDGING_HEADER="Bridge/BridgingHeader.h",
         ENABLE_USER_SCRIPT_SANDBOXING="NO", ENABLE_BITCODE="NO", GENERATE_INFOPLIST_FILE="NO",

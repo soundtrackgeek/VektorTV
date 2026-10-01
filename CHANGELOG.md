@@ -2,6 +2,22 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.6.0] - 2026-10-01
+
+### Added
+
+- Global programme search on Windows, macOS, iPhone, iPad and Apple TV across all imported guides, with time, country, provider-group and favorite-channel filters.
+- A shared SQLite full-text index with case/accent-insensitive word-prefix matching, automatic cached-guide migration and transactional index maintenance.
+- Double-click desktop guide programmes and search results to tune live; Apple touch/remote selection offers the corresponding playback action.
+
+### Changed
+
+- Replace eight-channel desktop guide pages with a virtualized scrolling list, automatic channel loading and a sticky time ruler. Native Apple guide lists also load more channels while scrolling.
+- Read desktop grid schedules in bounded cache batches, avoiding provider-request bursts while browsing.
+- Keep the guide details area stable so selecting a programme cannot move it between double-clicks.
+- Route the desktop header search and Cmd/Ctrl-K to programme search while in TV Guide.
+- Align desktop and native Apple versions at 0.6.0; increment the Apple build to 7.
+
 ## [0.5.0] - 2026-10-01
 
 ### Added

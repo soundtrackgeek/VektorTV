@@ -89,3 +89,23 @@ export type View =
   | "favorites"
   | "history"
   | "settings";
+
+export interface ProgrammeQuery {
+  search: string;
+  country: string | null;
+  group: string | null;
+  favoritesOnly: boolean;
+  from: number | null;
+  until: number | null;
+  offset: number;
+  limit: number;
+}
+export interface ProgrammeMatch {
+  channel: Channel;
+  programme: Programme;
+}
+export interface ProgrammePage {
+  results: ProgrammeMatch[];
+  total: number;
+  offset: number;
+}

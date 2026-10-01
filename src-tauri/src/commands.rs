@@ -8,7 +8,7 @@ use std::sync::{atomic::Ordering, Mutex, MutexGuard};
 use tauri::{AppHandle, Emitter, Manager, State};
 use vektortv_core::{
     provider::{self, Connection},
-    ChannelPage, ChannelQuery, Country, Group, Programme,
+    ChannelPage, ChannelQuery, Country, Group, Programme, ProgrammePage, ProgrammeQuery,
 };
 
 type Result<T> = std::result::Result<T, String>;
@@ -179,6 +179,39 @@ pub async fn get_schedule(
         }
     }
     Ok(existing)
+}
+#[tauri::command]
+pub async fn search_programmes(app: AppHandle, query: ProgrammeQuery) -> Result<ProgrammePage> {
+    blocking(app, move |state| {
+        lock(&state.store)?
+            .search_programmes(&query)
+            .map_err(|e| e.to_string())
+    })
+    .await
+}
+#[tauri::command]
+pub async fn guide_schedules(
+    app: AppHandle,
+    channel_ids: Vec<String>,
+    from: i64,
+    until: i64,
+) -> Result<std::collections::HashMap<String, Vec<Programme>>> {
+    if channel_ids.len() > 200 || until <= from || until.saturating_sub(from) > 604800 {
+        return Err("Choose up to 200 channels and a guide range of up to seven days.".into());
+    }
+    blocking(app, move |state| {
+        let store = lock(&state.store)?;
+        channel_ids
+            .into_iter()
+            .map(|id| {
+                let events = store
+                    .schedule(&id, from, until)
+                    .map_err(|e| e.to_string())?;
+                Ok((id, events))
+            })
+            .collect()
+    })
+    .await
 }
 #[tauri::command]
 pub fn set_favorite(state: State<'_, AppState>, channel_id: String, favorite: bool) -> Result<()> {

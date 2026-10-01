@@ -1,5 +1,9 @@
 # Verification
 
+## TV Guide release — 0.6.0
+
+Verification is in progress for the scrolling guide, global programme search, native Apple 0.6.0 (7) and desktop 0.6.0 packages. Final evidence and platform limits will be recorded here after the release checks.
+
 ## Countries — 0.5.0 (6)
 
 Checks on 2026-10-01 on Apple Silicon macOS 26.6.2, using released Xcode 26.6 (17F113):

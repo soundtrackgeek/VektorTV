@@ -93,6 +93,31 @@ final class ViewingRoomUITests: XCTestCase {
         capture("Channel groups")
     }
 
+    func testGlobalProgrammeSearchAndEmptyState() {
+        activate(app.buttons["TV Guide"])
+        activate(app.buttons["Search programmes"])
+        let search = app.textFields["Search all programmes"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        let result = app.buttons.matching(identifier: "programme-search-result").firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 30), "Imported guides should be searchable across the whole catalog")
+        capture("Global programme search")
+        #if os(tvOS)
+        focus(search)
+        XCUIRemote.shared.press(.select)
+        app.typeText("zznonexistentprogramme123")
+        XCUIRemote.shared.press(.menu)
+        #else
+        search.tap()
+        search.typeText("zznonexistentprogramme123\n")
+        #endif
+        capture("Programme query entered")
+        XCTAssertTrue(app.staticTexts["0 programmes found"].waitForExistence(timeout: 30))
+        XCTAssertFalse(result.exists, "Old results must disappear when the search changes")
+        activate(app.buttons["Filters"])
+        XCTAssertTrue(app.navigationBars["Programme filters"].waitForExistence(timeout: 10))
+        capture("Programme filters")
+    }
+
     func testCountriesFavoritesGroupsAndAlphabeticalChannels() {
         openNorway()
         let wasFavorite = app.buttons["Unfavorite country Norway"].exists

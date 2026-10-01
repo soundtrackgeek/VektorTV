@@ -353,7 +353,11 @@ export default function App() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         if (view === "settings" || view === "countries") setView("live");
-        window.setTimeout(() => searchRef.current?.focus(), 0);
+        window.setTimeout(() => {
+          if (view === "guide")
+            document.getElementById("guide-search-toggle")?.click();
+          else searchRef.current?.focus();
+        }, 0);
         return;
       }
       if (
@@ -389,7 +393,11 @@ export default function App() {
   };
   const openSearch = () => {
     if (view === "settings" || view === "countries") setView("live");
-    window.setTimeout(() => searchRef.current?.focus(), 0);
+    window.setTimeout(() => {
+      if (view === "guide")
+        document.getElementById("guide-search-toggle")?.click();
+      else searchRef.current?.focus();
+    }, 0);
   };
   return (
     <div className={`app-shell ${fullscreen ? "is-fullscreen" : ""}`}>
@@ -560,6 +568,15 @@ export default function App() {
           />
         ) : view === "guide" && !fullscreen ? (
           <Guide
+            key={`${debouncedSearch}|${group}|${countryCode ?? ""}`}
+            total={page.total}
+            loadingChannels={loading}
+            onLoadMore={() => {
+              void loadMore();
+            }}
+            countries={countries}
+            groups={groups}
+            revision={revision}
             channels={page.channels}
             now={now}
             onWatch={(c) => {

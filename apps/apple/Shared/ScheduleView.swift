@@ -21,6 +21,13 @@ struct ScheduleContent: View {
     @State private var loading = true
     @State private var message: String?
     @State private var attempt = 0
+    private func watch() {
+        onWatch()
+        Task {
+            await playback.play(channel, library: library)
+            if playback.channel?.id == channel.id { playback.isPresented = true }
+        }
+    }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -28,14 +35,7 @@ struct ScheduleContent: View {
                     ChannelLogo(channel: channel)
                     Text(channel.name).font(Theme.sectionFont)
                 }
-                Button {
-                    onWatch()
-                    Task {
-                        await playback.play(channel, library: library)
-                        // The guide can remain behind the full-screen player.
-                        if playback.channel?.id == channel.id { playback.isPresented = true }
-                    }
-                } label: { Label("Watch live", systemImage: "play.fill") }
+                Button(action: watch) { Label("Watch live", systemImage: "play.fill") }
                     .buttonStyle(CinemaButtonStyle(prominent: true))
                 if loading { ProgressView("Loading schedule…") }
                 if let message {
@@ -47,6 +47,7 @@ struct ScheduleContent: View {
                         .font(Theme.bodyFont).foregroundStyle(Theme.muted)
                 }
                 ForEach(programmes) { programme in
+                    Button(action: watch) {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("\(programme.startsAt.formatted(date: .abbreviated, time: .shortened)) – \(programme.endsAt.formatted(date: .omitted, time: .shortened))")
                             .font(Theme.detailFont).foregroundStyle(Theme.accent)
@@ -56,9 +57,10 @@ struct ScheduleContent: View {
                         }
                         Rectangle().fill(Theme.line).frame(height: 1).padding(.top, 10)
                     }
-                    #if os(tvOS)
-                    .focusable()
-                    #endif
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(CinemaButtonStyle())
+                    .accessibilityLabel("\(programme.title). Watch \(channel.name) live")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading).padding(Theme.pageInset)

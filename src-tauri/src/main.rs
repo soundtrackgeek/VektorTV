@@ -61,6 +61,8 @@ fn main() {
             commands::list_countries,
             commands::set_country_favorite,
             commands::get_schedule,
+            commands::guide_schedules,
+            commands::search_programmes,
             commands::set_favorite,
             commands::save_connection,
             commands::disconnect,

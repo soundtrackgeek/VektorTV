@@ -61,6 +61,9 @@ struct ChannelBrowser: View {
                                 }
                                 .buttonStyle(CinemaButtonStyle()).font(Theme.detailFont)
                                 .disabled(library.isLoading).padding(.vertical, 16)
+                                .task(id: library.channels.count) {
+                                    if guide && !library.isLoading { await library.reload(more: true) }
+                                }
                             }
                         }
                         .padding(.horizontal, Theme.contentInset)

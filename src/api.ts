@@ -8,6 +8,8 @@ import type {
   Group,
   PlayerStatus,
   Programme,
+  ProgrammeQuery,
+  ProgrammePage,
   Query,
   SyncProgress,
 } from "./types";
@@ -141,7 +143,7 @@ const previewInfo: AppInfo = {
   playerAvailable: true,
   playerError: null,
   progress: { phase: "", active: false, message: "" },
-  version: "0.5.0",
+  version: "0.6.0",
   platform: "preview",
   credentialStorage: "the operating system credential store",
 };
@@ -242,6 +244,71 @@ export const api = {
           ].filter((p) => p.end > from && p.start < until)
         : [],
     );
+  },
+  schedules: async (
+    channelIds: string[],
+    from: number,
+    until: number,
+  ): Promise<Record<string, Programme[]>> => {
+    if (native) return invoke("guide_schedules", { channelIds, from, until });
+    return Object.fromEntries(
+      await Promise.all(
+        channelIds.map(async (id) => [id, await api.schedule(id, from, until)]),
+      ),
+    );
+  },
+  searchProgrammes: async (query: ProgrammeQuery): Promise<ProgrammePage> => {
+    if (native) return invoke("search_programmes", { query });
+    const fold = (text: string) =>
+      text.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
+    const results = demo
+      ? (
+          await Promise.all(
+            channels
+              .filter(
+                (c) =>
+                  (!query.country ||
+                    demoCountryDefinitions
+                      .find((country) => country.code === query.country)
+                      ?.groups.includes(c.group)) &&
+                  (!query.group || c.group === query.group) &&
+                  (!query.favoritesOnly || c.favorite),
+              )
+              .map(async (channel) =>
+                (
+                  await api.schedule(
+                    channel.id,
+                    query.from ?? 0,
+                    query.until ?? Number.MAX_SAFE_INTEGER,
+                  )
+                )
+                  .filter((p) =>
+                    fold(query.search)
+                      .split(/[^\p{L}\p{N}]+/u)
+                      .filter(Boolean)
+                      .every((term) =>
+                        fold(`${p.title} ${p.description} ${p.category}`)
+                          .split(/[^\p{L}\p{N}]+/u)
+                          .some((word) => word.startsWith(term)),
+                      ),
+                  )
+                  .map((programme) => ({ channel, programme })),
+              ),
+          )
+        )
+          .flat()
+          .sort(
+            (a, b) =>
+              a.programme.start - b.programme.start ||
+              a.channel.name.localeCompare(b.channel.name) ||
+              a.channel.id.localeCompare(b.channel.id),
+          )
+      : [];
+    return {
+      results: results.slice(query.offset, query.offset + query.limit),
+      total: results.length,
+      offset: query.offset,
+    };
   },
   favorite: async (channelId: string, favorite: boolean) => {
     if (native) return invoke<void>("set_favorite", { channelId, favorite });

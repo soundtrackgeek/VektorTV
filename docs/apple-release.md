@@ -1,5 +1,9 @@
 # Native Apple builds and TestFlight
 
+## TV Guide release — 0.6.0 (7)
+
+Source and generated projects use **0.6.0 (7)** for both platforms. Release archives, App Store Connect uploads and VektorTV Internal processing verification are in progress; this section will record the actual outcomes.
+
 ## Countries release — 0.5.0 (6)
 
 **0.5.0 (6) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group’s Builds page was visibly verified as **Testing** for both platforms on 2026-10-01. Both native Apple targets use **0.5.0 (6)**. Released Xcode 26.6 (17F113) built the iOS and tvOS Release archives on 2026-10-01, and both automatic App Store distribution exports/uploads succeeded.

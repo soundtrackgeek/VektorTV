@@ -14,6 +14,7 @@ struct RootView: View {
     @State private var settingsPresented = false
     @State private var scheduleChannel: Channel?
     @State private var guideChannel: Channel?
+    @State private var programmeSearchPresented = false
 
     private var queryKey: String {
         "\(library.search)|\(library.group ?? "")|\(library.section.rawValue)|\(library.countryCode ?? "")|\(library.hasAccount)"
@@ -47,6 +48,15 @@ struct RootView: View {
                     .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { settingsPresented = false } } }
             }
         }
+        .sheet(isPresented: $programmeSearchPresented) {
+            NavigationStack {
+                ProgrammeSearchView(library: library) { channel in
+                    programmeSearchPresented = false
+                    tab = .watch
+                    Task { await playback.play(channel, library: library) }
+                }
+            }
+        }
         .sheet(item: $scheduleChannel) { channel in
             NavigationStack { ScheduleView(channel: channel, library: library, playback: playback) }
         }
@@ -69,6 +79,16 @@ struct RootView: View {
                 if let message = library.guideMessage {
                     StatusBanner(message: "Guide: \(message)") { library.guideMessage = nil }
                 }
+                if tab == .guide {
+                    HStack {
+                        Text("Explore channel schedules or search every guide.")
+                            .font(Theme.detailFont).foregroundStyle(Theme.muted)
+                        Spacer()
+                        Button { programmeSearchPresented = true } label: {
+                            Label("Search programmes", systemImage: "magnifyingglass")
+                        }.buttonStyle(CinemaButtonStyle()).font(Theme.detailFont)
+                    }.padding(.horizontal, Theme.pageInset).padding(.vertical, 8)
+                }
                 if tab == .countries {
                     CountryBrowser(library: library) { country, group in
                         library.openCountry(country, group: group)
@@ -82,7 +102,7 @@ struct RootView: View {
                             Rectangle().fill(Theme.line).frame(width: 1)
                             if tab == .guide {
                                 if let channel = guideChannel {
-                                    ScheduleContent(channel: channel, library: library, playback: playback)
+                                    ScheduleContent(channel: channel, library: library, playback: playback, onWatch: { tab = .watch })
                                         .id(channel.id)
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 } else {

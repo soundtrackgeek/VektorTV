@@ -71,6 +71,7 @@ struct CoreRequest: Encodable, Sendable {
     let command: String
     var connection: ProviderConnection?
     var query: ChannelQuery?
+    var programmeQuery: ProgrammeQuery?
     var id: String?
     var favorite: Bool?
 }
@@ -95,4 +96,25 @@ extension Programme {
     func remainingMinutes(at date: Date) -> Int {
         max(0, Int(ceil(endsAt.timeIntervalSince(date) / 60)))
     }
+}
+
+struct ProgrammeQuery: Encodable, Sendable {
+    var search = ""
+    var country: String?
+    var group: String?
+    var favoritesOnly = false
+    var from: Int64?
+    var until: Int64?
+    var offset = 0
+    var limit = 100
+}
+struct ProgrammeMatch: Decodable, Identifiable, Sendable {
+    let channel: Channel
+    let programme: Programme
+    var id: String { "\(channel.id)|\(programme.id)" }
+}
+struct ProgrammePage: Decodable, Sendable {
+    let results: [ProgrammeMatch]
+    let total: Int
+    let offset: Int
 }

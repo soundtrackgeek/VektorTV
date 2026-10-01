@@ -2,7 +2,7 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI and AVKit/AVPlayer. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.5.0
+## Features in 0.6.0
 
 The Tauri desktop client includes:
 
@@ -10,7 +10,8 @@ The Tauri desktop client includes:
 - Embedded VLC playback, including MPEG-TS and HLS, with pause/resume, stop, volume and fullscreen.
 - A dedicated Countries section with bundled SVG flags, country tiles, favorite countries pinned first, country groups and an **All channels A–Z** action on every platform.
 - Search and group filtering, paginated channel browsing, persistent favorites and viewing history.
-- Now/next programmes, upcoming schedules and a three-hour EPG grid. All programme times display in the computer's local time.
+- Now/next programmes, upcoming schedules and a continuously scrolling three-hour EPG grid with a sticky time ruler. Double-click a programme to tune its channel live. All programme times display in the computer's local time.
+- Programme search across every imported guide, with time, country, provider-group and favorite-channel filters on desktop, iPhone, iPad and Apple TV.
 - SQLite metadata cache; successful channel imports become available while the guide continues loading. A failed import retains the previous snapshot.
 - Streaming XMLTV parsing with a bounded network queue. Guide imports retain six hours of past programmes and the next 48 hours; a 1 GiB input limit and 384 MiB matched-data working-set limit protect the app from excessively large feeds.
 - On-demand Xtream short EPG for a selected channel while the main guide is unavailable or still importing.
@@ -33,6 +34,16 @@ Select a country to see its provider groups, or choose **All channels A–Z** to
 Country assignment uses provider **group names**, with explicit country names and common spelling aliases taking priority over leading ISO country codes (including `UK`). For example, `AL| ALBANIA SPORTS` belongs to Albania, `AFR| CABO VERDE` to Cape Verde, and `AR| ALGERIA` to Algeria. Regional, mixed-country and unrecognized groups remain available under **International & unassigned** with a globe symbol. Ambiguous provider prefixes such as `AR|`, `NA|` and `MU|` require a country name, so broad Arabic, North American and music groups do not receive an incorrect national flag. Country inference cannot identify a country that the provider never names; the original group browser remains available.
 
 All country detection, favorite persistence and channel ordering use the same Rust core. Desktop loads local SVG files; Apple compiles the same SVGs into vector image assets. No network flag service or emoji font is used. Cached libraries are upgraded automatically. Country favorites are local, with the same tvOS cache-reclamation limitation as channel favorites. Asset sources and licenses are in [third-party/README.md](third-party/README.md).
+
+## TV Guide and programme search
+
+On desktop, **TV Guide** scrolls up and down through the entire selected channel list. Additional channels load automatically as you approach the end, including groups larger than 100 channels; the time ruler stays visible. Single-click a programme for details, double-click it to switch to Watch and start its channel, or use **Watch channel live**. Selecting a future or past programme tunes the current live broadcast; recording and catch-up are not supported.
+
+Choose **Search programmes** in TV Guide to search titles, descriptions and genres across **all channels with imported guide data**, independently of the channel sidebar's country, group or search. Search accepts case- and accent-insensitive word prefixes; multiple words must all match. Filter by **All guide times**, **On now**, **Next 24 hours** or **Now & upcoming**, and optionally country, provider group or favorite channels. Results show the channel, local date/time and description. Large result sets have **More results** and **Previous results** controls. On desktop, the header search button and Cmd/Ctrl-K open programme search while TV Guide is active.
+
+Native Apple TV Guide also loads additional channels as you scroll. On iPhone/iPad, tap a programme or result to watch live; on Apple TV, focus it and press Select. **Search programmes → Filters** offers the same filters as desktop. Apple uses touch/remote-friendly schedule lists rather than a mouse-oriented timeline. The existing **Watch live** action remains available for channels without guide information.
+
+Search covers the downloaded XMLTV guide and cached short-guide entries, not a provider's undisclosed schedule. The normal import retains six hours of past programmes and the next 48 hours, subject to provider availability. Refresh channels and guide in Settings if data is missing or outdated. Existing caches receive a local full-text index automatically; the index is maintained as guide data is imported or updated. Scrolling the desktop grid reads cached schedules in batches and does not issue a provider request for every row.
 
 ## Run the native Apple apps
 
@@ -64,7 +75,7 @@ Every version bump must include Release archives and TestFlight uploads for both
 
 The shared schemes include XCTest UI integration tests. Configure the simulator account with the development launcher first, then run `xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-iOS -destination 'platform=iOS Simulator,id=<simulator-udid>' -parallel-testing-enabled NO test`; use scheme `VektorTV-tvOS` and platform `tvOS Simulator` for Apple TV. Tests skip without a configured account and require the test provider's NRK1 channel for live playback. They restore the favorite state after checking it. Current results and coverage limits are in [docs/verification.md](docs/verification.md).
 
-The iOS and tvOS **0.5.0 (6)** builds are available in the **VektorTV Internal** TestFlight group. Both completed Apple processing and show **Testing** on 2026-10-01. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
+Native Apple **0.6.0 (7)** is the current source version. Its distribution verification is recorded in [docs/apple-release.md](docs/apple-release.md); the preceding **0.5.0 (6)** builds remain available in **VektorTV Internal** until the new uploads finish processing. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
 
 ## Run the desktop app
 

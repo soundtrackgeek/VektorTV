@@ -53,6 +53,12 @@
 			"path" = "Shared/PlaybackStore.swift";
 			"sourceTree" = "SOURCE_ROOT";
 		};
+		"5D9AD8E925DB9BB405311D2A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Shared/ProgrammeSearchView.swift";
+			"sourceTree" = "SOURCE_ROOT";
+		};
 		"57F2F2B797CC07BED9558BAD" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -151,6 +157,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "4DDAE0EFE7819CAE187A7582";
 		};
+		"A2735AF4721932867C787B68" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "5D9AD8E925DB9BB405311D2A";
+		};
 		"1991EBFCB279B4632A680097" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "57F2F2B797CC07BED9558BAD";
@@ -183,6 +193,7 @@
 				"1179C205D84468112D552DA7",
 				"60F86FBDC8383D6F2D97C3D5",
 				"453D07D8E5AC13F5A09542FF",
+				"A2735AF4721932867C787B68",
 				"1991EBFCB279B4632A680097",
 				"AED055CD9263B5AAA5E18EB2",
 				"EEEAF2E87295A97F315151B0",
@@ -252,8 +263,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.5.0";
-				"CURRENT_PROJECT_VERSION" = "6";
+				"MARKETING_VERSION" = "0.6.0";
+				"CURRENT_PROJECT_VERSION" = "7";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -300,8 +311,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.5.0";
-				"CURRENT_PROJECT_VERSION" = "6";
+				"MARKETING_VERSION" = "0.6.0";
+				"CURRENT_PROJECT_VERSION" = "7";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -501,6 +512,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "4DDAE0EFE7819CAE187A7582";
 		};
+		"5F0168C78528BB2D114EDEC3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "5D9AD8E925DB9BB405311D2A";
+		};
 		"59AEB8A71EE6EAC99D1F7C59" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "57F2F2B797CC07BED9558BAD";
@@ -533,6 +548,7 @@
 				"C93469851EA3CD3C863D57D9",
 				"F1AC73096581049CBC2D6CC6",
 				"516B6B9EE8D0A707E734A37B",
+				"5F0168C78528BB2D114EDEC3",
 				"59AEB8A71EE6EAC99D1F7C59",
 				"24DC84736EB7D928404CDADD",
 				"8AEB8E29DF09FF3F84CCD9C7",
@@ -602,8 +618,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.5.0";
-				"CURRENT_PROJECT_VERSION" = "6";
+				"MARKETING_VERSION" = "0.6.0";
+				"CURRENT_PROJECT_VERSION" = "7";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -651,8 +667,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.5.0";
-				"CURRENT_PROJECT_VERSION" = "6";
+				"MARKETING_VERSION" = "0.6.0";
+				"CURRENT_PROJECT_VERSION" = "7";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -821,6 +837,7 @@
 				"E3B8200B8415C74576A35987",
 				"FD538D7724FB1C268E0B4457",
 				"4DDAE0EFE7819CAE187A7582",
+				"5D9AD8E925DB9BB405311D2A",
 				"57F2F2B797CC07BED9558BAD",
 				"5B76C50CB01CC6E46F3A5FD0",
 				"5FCAE691F777A764469140D8",

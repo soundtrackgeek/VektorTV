@@ -30,7 +30,7 @@ final class LibraryStore {
         guard !startupComplete else { return }
         startupComplete = true
         do {
-            core = try CoreClient()
+            core = try await Task.detached(priority: .userInitiated) { try CoreClient() }.value
             if let saved = try CredentialStore.load() {
                 connection = saved
                 let _: Bool = try await call(CoreRequest(command: "restore", connection: saved))
