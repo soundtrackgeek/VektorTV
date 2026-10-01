@@ -2,18 +2,16 @@
 
 ## Automatic guide loading — 0.6.1 (9)
 
-Build 9 is being rebuilt from the final committed source. Build 8 completed processing below, but its archive preceded the final Settings disabled-state adjustment. It is superseded by build 9 once processing completes.
-
-**0.6.1 (8) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **21:46 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
+**0.6.1 (9) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **21:55 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives from the final source; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
 
 | Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
 | --- | --- | --- | --- | --- |
-| iOS / iPadOS | 0.6.1 (8) | 2026-10-01 21:42:24 | Testing — VektorTV Internal | [iOS build 8](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/29600485-1206-42ce-be8e-6f321662071d) |
-| tvOS | 0.6.1 (8) | 2026-10-01 21:42:36 | Testing — VektorTV Internal | [tvOS build 8](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/e8c6fc6f-b0d6-4a3f-945e-c2dd88c8db9e) |
+| iOS / iPadOS | 0.6.1 (9) | 2026-10-01 21:51:28 | Testing — VektorTV Internal | [iOS build 9](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/84757195-6788-4609-b8a2-2725891ed526) |
+| tvOS | 0.6.1 (9) | 2026-10-01 21:51:06 | Testing — VektorTV Internal | [tvOS build 9](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/fe54e3f1-6f3d-44a9-b793-50521c8ed65e) |
 
-This release refreshes the full searchable guide on startup/resume independently of channel playback, exposes loading/failure status, and retains cached programmes after empty imports. iPhone/iPad/tvOS integration tests passed, including real HLS playback. Fresh iPhone and tvOS launches recovered interrupted full imports to **420,624 cached programmes** each without playback. See [verification.md](verification.md).
+This release refreshes the full searchable guide on startup/resume independently of channel playback, exposes loading/failure status, and retains cached programmes after empty imports. iPhone/iPad/tvOS integration tests passed, including real HLS playback. Fresh iPhone and tvOS launches recovered interrupted full imports to **420,624 cached programmes** each without playback; global search passed again against those full caches. See [verification.md](verification.md).
 
-Archives/exports: `apps/apple/build/0.6.1-8/`. Local logs: `/tmp/vektortv-061-{archive,upload}-{ios,tvos}.log`. Both archive manifests confirm version 0.6.1/build 8. No provider credentials are bundled.
+Archives/exports: `apps/apple/build/0.6.1-9/`. Local logs: `/tmp/vektortv-061-9-{archive,upload}-{ios,tvos}.log`. Both archive manifests confirm version 0.6.1/build 9, and both Settings object files were compiled after the final source adjustment. No provider credentials are bundled. Build 8 also completed processing, but build 9 supersedes it to include the final Settings disabled state during guide loading.
 
 ## TV Guide release — 0.6.0 (7)
 
