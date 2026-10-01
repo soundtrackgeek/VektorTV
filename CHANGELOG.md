@@ -13,7 +13,7 @@ All notable changes are recorded here. Versions follow semantic versioning.
 
 ### Changed
 
-- Align desktop and native Apple versions at 0.6.1; increment the Apple build to 8.
+- Align desktop and native Apple versions at 0.6.1; increment the Apple build to 9.
 
 ## [0.6.0] - 2026-10-01
 

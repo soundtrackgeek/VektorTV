@@ -1,8 +1,19 @@
 # Native Apple builds and TestFlight
 
-## Automatic guide loading — 0.6.1 (8)
+## Automatic guide loading — 0.6.1 (9)
 
-Release verification is in progress. Both targets use version **0.6.1 (8)** and released Xcode **26.6 (17F113)**. This release refreshes the full searchable guide on startup/resume independently of channel playback, exposes loading/failure status, and retains cached programmes after empty imports. Archive/export root: `apps/apple/build/0.6.1-8/`. Upload and internal availability have not yet been confirmed.
+Build 9 is being rebuilt from the final committed source. Build 8 completed processing below, but its archive preceded the final Settings disabled-state adjustment. It is superseded by build 9 once processing completes.
+
+**0.6.1 (8) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **21:46 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
+
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.6.1 (8) | 2026-10-01 21:42:24 | Testing — VektorTV Internal | [iOS build 8](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/29600485-1206-42ce-be8e-6f321662071d) |
+| tvOS | 0.6.1 (8) | 2026-10-01 21:42:36 | Testing — VektorTV Internal | [tvOS build 8](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/e8c6fc6f-b0d6-4a3f-945e-c2dd88c8db9e) |
+
+This release refreshes the full searchable guide on startup/resume independently of channel playback, exposes loading/failure status, and retains cached programmes after empty imports. iPhone/iPad/tvOS integration tests passed, including real HLS playback. Fresh iPhone and tvOS launches recovered interrupted full imports to **420,624 cached programmes** each without playback. See [verification.md](verification.md).
+
+Archives/exports: `apps/apple/build/0.6.1-8/`. Local logs: `/tmp/vektortv-061-{archive,upload}-{ios,tvos}.log`. Both archive manifests confirm version 0.6.1/build 8. No provider credentials are bundled.
 
 ## TV Guide release — 0.6.0 (7)
 
