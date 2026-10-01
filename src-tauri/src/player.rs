@@ -2,13 +2,11 @@ use libloading::Library;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::{c_char, c_int, c_void, CString},
-    path::{Path, PathBuf},
+    path::Path,
 };
 use tauri::WebviewWindow;
-use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, SetWindowPos, ShowWindow, SWP_NOACTIVATE, SW_HIDE, SW_SHOW, WS_CHILD,
-    WS_CLIPCHILDREN, WS_CLIPSIBLINGS,
-};
+mod surface;
+use surface::Surface;
 
 type Pointer = *mut c_void;
 
@@ -33,8 +31,8 @@ struct MediaStats {
 }
 
 struct Api {
-    _core: Library,
     _library: Library,
+    _core: Library,
     new: unsafe extern "C" fn(c_int, *const *const c_char) -> Pointer,
     release: unsafe extern "C" fn(Pointer),
     player_new: unsafe extern "C" fn(Pointer) -> Pointer,
@@ -42,7 +40,7 @@ struct Api {
     media_new_location: unsafe extern "C" fn(Pointer, *const c_char) -> Pointer,
     media_release: unsafe extern "C" fn(Pointer),
     set_media: unsafe extern "C" fn(Pointer, Pointer),
-    set_hwnd: unsafe extern "C" fn(Pointer, Pointer),
+    set_drawable: unsafe extern "C" fn(Pointer, Pointer),
     play: unsafe extern "C" fn(Pointer) -> c_int,
     stop: unsafe extern "C" fn(Pointer),
     set_pause: unsafe extern "C" fn(Pointer, c_int),
@@ -58,9 +56,9 @@ impl Api {
     fn load(directory: &Path) -> Result<Self, String> {
         // Libraries are loaded from an explicit trusted runtime directory, never PATH.
         unsafe {
-            let core = Library::new(directory.join("libvlccore.dll"))
+            let core = Library::new(surface::core_library(directory))
                 .map_err(|_| "The VLC core runtime could not be loaded.".to_owned())?;
-            let library = Library::new(directory.join("libvlc.dll"))
+            let library = Library::new(surface::player_library(directory))
                 .map_err(|_| "The VLC playback runtime could not be loaded.".to_owned())?;
             macro_rules! function {
                 ($name:literal) => {
@@ -77,7 +75,10 @@ impl Api {
                 media_new_location: function!("libvlc_media_new_location"),
                 media_release: function!("libvlc_media_release"),
                 set_media: function!("libvlc_media_player_set_media"),
-                set_hwnd: function!("libvlc_media_player_set_hwnd"),
+                #[cfg(target_os = "windows")]
+                set_drawable: function!("libvlc_media_player_set_hwnd"),
+                #[cfg(target_os = "macos")]
+                set_drawable: function!("libvlc_media_player_set_nsobject"),
                 play: function!("libvlc_media_player_play"),
                 stop: function!("libvlc_media_player_stop"),
                 set_pause: function!("libvlc_media_player_set_pause"),
@@ -122,7 +123,7 @@ pub struct Player {
     instance: usize,
     player: usize,
     media: Option<usize>,
-    hwnd: usize,
+    surface: Surface,
     pub channel_id: Option<String>,
     pub history_recorded: bool,
     last_request: u64,
@@ -131,23 +132,9 @@ pub struct Player {
 
 impl Player {
     pub fn new(window: &WebviewWindow, resources: &Path) -> Result<Self, String> {
-        let candidates = [
-            resources.join("vlc"),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/vlc"),
-            PathBuf::from(
-                std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".into()),
-            )
-            .join("VideoLAN/VLC"),
-        ];
-        let directory = candidates
-            .iter()
-            .find(|p| p.join("libvlc.dll").is_file())
-            .ok_or_else(|| {
-                "The VLC runtime is missing. Run npm run prepare:vlc and restart the app."
-                    .to_owned()
-            })?;
+        let directory = surface::runtime_directory(resources)?;
         std::env::set_var("VLC_PLUGIN_PATH", directory.join("plugins"));
-        let api = Api::load(directory)?;
+        let api = Api::load(&directory)?;
         let options = [
             "--quiet",
             "--no-video-title-show",
@@ -157,11 +144,7 @@ impl Player {
         ]
         .map(|s| CString::new(s).unwrap());
         let pointers: Vec<_> = options.iter().map(|s| s.as_ptr()).collect();
-        let parent = window
-            .hwnd()
-            .map_err(|_| "The video window could not be created.".to_owned())?
-            .0;
-        let class: Vec<u16> = "STATIC\0".encode_utf16().collect();
+        let surface = Surface::new(window)?;
         unsafe {
             let instance = (api.new)(pointers.len() as c_int, pointers.as_ptr());
             if instance.is_null() {
@@ -172,26 +155,7 @@ impl Player {
                 (api.release)(instance);
                 return Err("The video player could not start.".into());
             }
-            let hwnd = CreateWindowExW(
-                0,
-                class.as_ptr(),
-                std::ptr::null(),
-                WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-                0,
-                0,
-                1,
-                1,
-                parent,
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-                std::ptr::null(),
-            );
-            if hwnd.is_null() {
-                (api.player_release)(player);
-                (api.release)(instance);
-                return Err("The embedded video surface could not start.".into());
-            }
-            (api.set_hwnd)(player, hwnd);
+            (api.set_drawable)(player, surface.handle());
             (api.set_key_input)(player, 0);
             (api.set_mouse_input)(player, 0);
             (api.audio_set_volume)(player, 80);
@@ -200,7 +164,7 @@ impl Player {
                 instance: instance as usize,
                 player: player as usize,
                 media: None,
-                hwnd: hwnd as usize,
+                surface,
                 channel_id: None,
                 history_recorded: false,
                 last_request: 0,
@@ -237,7 +201,7 @@ impl Player {
     pub fn stop(&mut self) {
         unsafe {
             (self.api.stop)(self.player as Pointer);
-            ShowWindow(self.hwnd as Pointer, SW_HIDE);
+            self.surface.hide();
         }
         self.channel_id = None;
     }
@@ -276,22 +240,10 @@ impl Player {
         {
             return Err("The video surface dimensions are invalid.".into());
         }
-        unsafe {
-            if !bounds.visible || self.channel_id.is_none() {
-                ShowWindow(self.hwnd as Pointer, SW_HIDE);
-            } else {
-                SetWindowPos(
-                    self.hwnd as Pointer,
-                    std::ptr::null_mut(),
-                    bounds.x.round() as i32,
-                    bounds.y.round() as i32,
-                    bounds.width.max(1.0).round() as i32,
-                    bounds.height.max(1.0).round() as i32,
-                    SWP_NOACTIVATE,
-                );
-                ShowWindow(self.hwnd as Pointer, SW_SHOW);
-            }
-        }
+        self.surface.bounds(Bounds {
+            visible: bounds.visible && self.channel_id.is_some(),
+            ..bounds
+        });
         Ok(())
     }
     pub fn status(&self) -> PlayerStatus {

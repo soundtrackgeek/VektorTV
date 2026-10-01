@@ -21,7 +21,7 @@ fn now() -> i64 {
     chrono::Utc::now().timestamp()
 }
 
-// VLC stop/switch can wait for its Win32 video thread. The window message pump
+// VLC stop/switch can wait for its native video thread. The window message pump
 // must remain free, including while another command waits on the player mutex.
 async fn blocking<T: Send + 'static>(
     app: AppHandle,
@@ -55,6 +55,8 @@ pub struct AppInfo {
     player_error: Option<String>,
     progress: SyncProgress,
     version: &'static str,
+    platform: &'static str,
+    credential_storage: &'static str,
 }
 
 #[tauri::command]
@@ -98,6 +100,8 @@ fn app_info_inner(state: &AppState) -> Result<AppInfo> {
         player_error,
         progress,
         version: env!("CARGO_PKG_VERSION"),
+        platform: std::env::consts::OS,
+        credential_storage: credentials::storage_name(),
     })
 }
 

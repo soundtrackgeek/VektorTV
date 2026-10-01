@@ -66,8 +66,7 @@ export default function Guide({
     <section className="guide-view">
       <div className="section-topline">
         <div>
-          <span className="eyebrow">FIND SOMETHING GOOD</span>
-          <h1>What's on.</h1>
+          <h1>TV Guide</h1>
         </div>
         <div className="guide-navigation">
           <button

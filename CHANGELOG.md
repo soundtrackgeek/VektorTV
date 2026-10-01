@@ -2,6 +2,21 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.4.0] - 2026-10-01
+
+### Added
+
+- Tauri 2 support for macOS: embedded AppKit/libVLC playback, Keychain storage, native keyboard handling, app icon and bundled app/disk-image packaging.
+- Windows installer and macOS package builds in CI, with downloadable workflow artifacts.
+- Explicit AGENTS.md requirements to keep native Apple and Tauri Windows/macOS experiences aligned when UI, shared features or core behavior changes.
+
+### Changed
+
+- Bring the Cinema Lounge design to both desktop platforms: Watch/TV Guide header, channel sidebar, restrained charcoal/teal styling, 16:9 video and now/next programme details.
+- Retain desktop channel search/groups, favorites/history, guide, settings and playback shortcuts in the refreshed layout.
+- Keep native playback teardown off the UI thread, including macOS Cmd-Q.
+- Synchronize application versions at 0.4.0; native iOS/tvOS distribution uses build 5.
+
 ## [0.3.0] - 2026-10-01
 
 ### Added

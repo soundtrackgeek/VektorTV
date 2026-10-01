@@ -71,27 +71,41 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let state = window.state::<AppState>();
-                if state
-                    .closing
-                    .swap(true, std::sync::atomic::Ordering::SeqCst)
-                {
-                    return;
-                }
-                let app = window.app_handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    let worker = app.clone();
-                    let _ = tauri::async_runtime::spawn_blocking(move || {
-                        let state = worker.state::<AppState>();
-                        // Drop VLC while the window message pump is still running.
-                        let player = state.player.lock().ok().and_then(|mut p| p.take());
-                        drop(player);
-                    })
-                    .await;
-                    app.exit(0);
-                });
+                shutdown(window.app_handle());
             }
         })
-        .run(tauri::generate_context!())
-        .expect("VektorTV could not start");
+        .build(tauri::generate_context!())
+        .expect("VektorTV could not start")
+        .run(|app, event| {
+            // macOS Quit (Cmd-Q) does not send CloseRequested to the window.
+            if let tauri::RunEvent::ExitRequested {
+                api, code: None, ..
+            } = event
+            {
+                api.prevent_exit();
+                shutdown(app);
+            }
+        });
+}
+
+fn shutdown(app: &tauri::AppHandle) {
+    let state = app.state::<AppState>();
+    if state
+        .closing
+        .swap(true, std::sync::atomic::Ordering::SeqCst)
+    {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let worker = app.clone();
+        let _ = tauri::async_runtime::spawn_blocking(move || {
+            let state = worker.state::<AppState>();
+            // VLC may need AppKit/Win32 callbacks while releasing its video output.
+            let player = state.player.lock().ok().and_then(|mut p| p.take());
+            drop(player);
+        })
+        .await;
+        app.exit(0);
+    });
 }

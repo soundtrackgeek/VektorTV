@@ -7,18 +7,16 @@ import {
   VolumeX,
   Maximize,
   Minimize,
-  Radio,
+  Tv,
   LoaderCircle,
   RotateCcw,
   Star,
-  ArrowRight,
+  CalendarDays,
   AlertCircle,
 } from "lucide-react";
 import { api, demo } from "../api";
 import type { AppInfo, Channel, PlayerStatus, Programme } from "../types";
 import { progress, time } from "../utils";
-import { ChannelLogo } from "./ChannelBrowser";
-import { Mark } from "./Brand";
 
 interface Props {
   channel: Channel | null;
@@ -33,125 +31,214 @@ interface Props {
   onFavorite: () => void;
   error: string | null;
   onSettings: () => void;
+  onGuide: () => void;
 }
 export default function PlayerView(p: Props) {
   const surface = useRef<HTMLDivElement>(null);
+  const room = useRef<HTMLElement>(null);
   const active = ["opening", "buffering", "playing", "paused"].includes(
     p.status.state,
   );
   const busy = ["opening", "buffering"].includes(p.status.state);
+  const failed =
+    !!p.error || ["error", "ended", "unavailable"].includes(p.status.state);
   useEffect(() => {
+    let frame = 0;
     const position = () => {
-      const rect = surface.current?.getBoundingClientRect();
-      if (rect) {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const rect = surface.current?.getBoundingClientRect();
+        const viewport = room.current?.getBoundingClientRect();
+        if (!rect || !viewport) return;
         const scale = window.devicePixelRatio;
+        // Native video must never paint over the header when the pane scrolls.
+        const visible =
+          active &&
+          rect.top >= viewport.top - 1 &&
+          rect.bottom <= viewport.bottom + 1;
         void api
           .bounds({
             x: rect.x * scale,
             y: rect.y * scale,
             width: rect.width * scale,
             height: rect.height * scale,
-            visible: active,
+            visible,
           })
           .catch(() => {});
-      }
+      });
     };
     const observer = new ResizeObserver(position);
     if (surface.current) observer.observe(surface.current);
+    if (room.current) observer.observe(room.current);
     window.addEventListener("resize", position);
-    const timer = window.setTimeout(position, 50);
+    window.addEventListener("scroll", position, true);
     position();
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener("resize", position);
-      window.clearTimeout(timer);
+      window.removeEventListener("scroll", position, true);
       void api
         .bounds({ x: 0, y: 0, width: 1, height: 1, visible: false })
         .catch(() => {});
     };
   }, [active, p.fullscreen]);
   const current =
-    p.schedule.find((s) => s.start <= p.now && s.end > p.now) || p.channel?.now;
-  const upcoming = p.schedule.filter((s) => s.start > p.now).slice(0, 5);
+    p.schedule.find((s) => s.start <= p.now && s.end > p.now) ||
+    (p.channel?.now && p.channel.now.start <= p.now && p.channel.now.end > p.now
+      ? p.channel.now
+      : null);
+  const next =
+    p.schedule.find((s) => s.start > p.now) ||
+    (p.channel?.next && p.channel.next.start > p.now ? p.channel.next : null);
+  const stateLabel = busy
+    ? "CONNECTING"
+    : p.status.state === "paused"
+      ? "PAUSED"
+      : p.status.state === "playing"
+        ? "LIVE"
+        : demo && p.channel
+          ? "PREVIEW"
+          : "READY";
   return (
     <section
+      ref={room}
       className={`viewing-room ${p.fullscreen ? "fullscreen-room" : ""}`}
+      aria-label="Viewing room"
     >
-      <div className="player-card">
+      <div className="viewing-content">
         <div className="video-surface" ref={surface}>
-          {demo && p.channel && p.status.state === "preview" ? (
-            <div className="preview-scene">
-              <div className="mountain mountain-one" />
-              <div className="mountain mountain-two" />
-              <div className="preview-label">
-                <Radio size={18} /> Interface preview · playback is available in
-                the Windows app
-              </div>
-            </div>
-          ) : (
+          {(!active || busy) && (
             <div className="player-idle">
-              <Mark className="idle-mark" />
-              {p.error ||
-              p.status.state === "error" ||
-              p.status.state === "ended" ? (
-                <>
-                  <AlertCircle className="error-icon" size={30} />
-                  <h2>
-                    {p.status.state === "ended"
-                      ? "The stream has ended"
-                      : "Unable to play this channel"}
-                  </h2>
-                  <p>
-                    {p.error ||
-                      "The provider could not deliver this stream. Try again or choose another channel."}
-                  </p>
-                  <button className="primary-button" onClick={p.onPlay}>
-                    <RotateCcw size={16} />
-                    Try again
-                  </button>
-                </>
+              {failed ? (
+                <AlertCircle size={38} />
+              ) : busy ? (
+                <LoaderCircle size={34} className="spin" />
               ) : (
-                <>
-                  <h2>
-                    {busy
-                      ? "Opening your channel…"
-                      : p.channel
-                        ? "Ready when you are"
-                        : "Your next favorite is on air"}
-                  </h2>
-                  <p>
-                    {!p.info?.configured
-                      ? "Connect your IPTV service to start watching."
-                      : p.channel
-                        ? p.channel.name
-                        : "Choose a channel from the list and settle in."}
-                  </p>
-                  {!p.info?.configured ? (
-                    <button className="primary-button" onClick={p.onSettings}>
-                      <ArrowRight size={16} />
-                      Connect your service
-                    </button>
-                  ) : p.channel && !active ? (
-                    <button className="primary-button" onClick={p.onPlay}>
-                      <Play size={16} fill="currentColor" />
-                      Watch live
-                    </button>
-                  ) : busy ? (
-                    <LoaderCircle className="spin" size={24} />
-                  ) : (
-                    <span className="idle-hint">
-                      <Radio size={14} />
-                      Live television, made personal.
-                    </span>
-                  )}
-                </>
+                <Tv size={52} strokeWidth={1} />
               )}
+              <h2>
+                {failed
+                  ? "Playback unavailable"
+                  : busy
+                    ? "Connecting to live stream…"
+                    : demo && p.channel
+                      ? "Interface preview"
+                      : "Your viewing room"}
+              </h2>
+              <p>
+                {failed
+                  ? p.error ||
+                    p.info?.playerError ||
+                    "Try again or choose another channel."
+                  : demo && p.channel
+                    ? "Live playback is available in the desktop app."
+                    : p.channel
+                      ? p.channel.name
+                      : "Choose a channel and settle in."}
+              </p>
+              {!p.info?.configured ? (
+                <button className="primary-button" onClick={p.onSettings}>
+                  Connect your service
+                </button>
+              ) : failed && p.channel ? (
+                <button className="primary-button" onClick={p.onPlay}>
+                  <RotateCcw size={17} />
+                  Retry channel
+                </button>
+              ) : null}
             </div>
           )}
         </div>
+        {!p.fullscreen && (
+          <div className="programme-area">
+            {p.channel ? (
+              <>
+                <div className="programme-channel">
+                  <span>{p.channel.name}</span>
+                  <span className={active ? "live-label" : ""}>
+                    {failed ? "UNAVAILABLE" : stateLabel}
+                  </span>
+                </div>
+                <h1>{current?.title || "Live television"}</h1>
+                {current ? (
+                  <>
+                    <p className="programme-meta">
+                      {time(current.start)}–{time(current.end)} ·{" "}
+                      {Math.max(0, Math.ceil((current.end - p.now) / 60))} min
+                      left
+                    </p>
+                    <div
+                      className="programme-progress"
+                      role="progressbar"
+                      aria-label="Programme elapsed"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round(progress(current, p.now))}
+                    >
+                      <i style={{ width: `${progress(current, p.now)}%` }} />
+                    </div>
+                    {current.description && (
+                      <p className="programme-description">
+                        {current.description}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="programme-description">
+                    Programme information unavailable
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <h1>Your viewing room</h1>
+                <p className="programme-description">
+                  Choose a channel to watch live. Your programme and what's on
+                  next will appear here.
+                </p>
+              </>
+            )}
+          </div>
+        )}
         <div className="playback-controls">
           <button
-            className="icon-button play-control"
+            className="primary-button full-screen-button"
+            onClick={p.onFullscreen}
+            disabled={!p.channel}
+          >
+            {p.fullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
+            {p.fullscreen ? "Exit full screen" : "Full screen"}
+          </button>
+          {!p.fullscreen && (
+            <>
+              <button
+                className={`icon-button ${p.channel?.favorite ? "is-favorite" : ""}`}
+                disabled={!p.channel}
+                aria-label={
+                  p.channel?.favorite
+                    ? "Remove from favorites"
+                    : "Add to favorites"
+                }
+                onClick={p.onFavorite}
+              >
+                <Star
+                  size={22}
+                  fill={p.channel?.favorite ? "currentColor" : "none"}
+                />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Programme guide"
+                onClick={p.onGuide}
+              >
+                <CalendarDays size={21} />
+              </button>
+            </>
+          )}
+          <button
+            className="icon-button"
+            disabled={!p.channel || busy}
             aria-label={
               p.status.state === "paused"
                 ? "Resume playback"
@@ -159,19 +246,16 @@ export default function PlayerView(p: Props) {
                   ? "Pause playback"
                   : "Play channel"
             }
-            disabled={!p.channel}
             onClick={() =>
               active
                 ? p.onAction(p.status.state === "paused" ? "resume" : "pause")
                 : p.onPlay()
             }
           >
-            {busy ? (
-              <LoaderCircle className="spin" size={20} />
-            ) : active && p.status.state !== "paused" ? (
-              <Pause size={20} fill="currentColor" />
+            {active && p.status.state !== "paused" ? (
+              <Pause size={19} />
             ) : (
-              <Play size={20} fill="currentColor" />
+              <Play size={19} />
             )}
           </button>
           <button
@@ -180,164 +264,45 @@ export default function PlayerView(p: Props) {
             disabled={!active && p.status.state !== "preview"}
             onClick={() => p.onAction("stop")}
           >
-            <Square size={15} />
+            <Square size={17} fill="currentColor" />
           </button>
-          <span className={`live-indicator ${active ? "active" : ""}`}>
-            <i />
-            {p.status.state === "paused"
-              ? "PAUSED"
-              : demo
-                ? "PREVIEW"
-                : active
-                  ? "LIVE"
-                  : "READY"}
-          </span>
-          <span className="playback-status" aria-live="polite">
-            {busy
-              ? "Connecting…"
-              : p.status.state === "playing"
-                ? `${p.status.width && p.status.height ? `${p.status.width} × ${p.status.height}` : "Playing"}`
-                : p.status.state === "error"
-                  ? "Playback unavailable"
-                  : ""}
-          </span>
-          <div className="controls-spacer" />
-          <button
-            className="icon-button"
-            aria-label={p.status.volume ? "Mute audio" : "Unmute audio"}
-            onClick={() => p.onAction("volume", p.status.volume ? 0 : 80)}
-          >
-            {p.status.volume ? <Volume2 size={19} /> : <VolumeX size={19} />}
-          </button>
-          <input
-            className="volume-slider"
-            type="range"
-            min="0"
-            max="100"
-            aria-label="Volume"
-            value={p.status.volume}
-            onChange={(e) => p.onAction("volume", Number(e.target.value))}
-          />
-          <span className="control-divider" />
-          <button
-            className="icon-button"
-            aria-label={p.fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            onClick={p.onFullscreen}
-          >
-            {p.fullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
-          </button>
-        </div>
-      </div>
-      {!p.fullscreen && (
-        <div className="programme-area">
-          {p.channel ? (
-            <>
-              <div className="now-heading">
-                <ChannelLogo channel={p.channel} large />
-                <div>
-                  <div className="eyebrow">
-                    {p.channel.name}
-                    <span className="on-air-dot" />
-                    ON AIR
-                  </div>
-                  <h1>{current?.title || p.channel.name}</h1>
-                </div>
-                <button
-                  className={`outline-button programme-favorite ${p.channel.favorite ? "is-favorite" : ""}`}
-                  onClick={p.onFavorite}
-                >
-                  <Star
-                    size={16}
-                    fill={p.channel.favorite ? "currentColor" : "none"}
-                  />
-                  {p.channel.favorite ? "Favorite" : "Add favorite"}
-                </button>
-              </div>
-              {current ? (
-                <>
-                  <div className="programme-meta">
-                    <span>
-                      {time(current.start)} – {time(current.end)}
-                    </span>
-                    <span className="meta-dot" />
-                    {current.category && (
-                      <>
-                        <span>{current.category}</span>
-                        <span className="meta-dot" />
-                      </>
-                    )}
-                    <span>
-                      {Math.max(1, Math.ceil((current.end - p.now) / 60))} min
-                      left
-                    </span>
-                  </div>
-                  <div className="programme-progress">
-                    <i style={{ width: `${progress(current, p.now)}%` }} />
-                  </div>
-                  <p className="programme-description">
-                    {current.description ||
-                      "No programme description is available."}
-                  </p>
-                </>
-              ) : (
-                <p className="programme-description">
-                  No programme information is available for this channel. You
-                  can still watch live.
-                </p>
-              )}
-              <div className="coming-heading">
-                <h2>Coming up</h2>
-                <span>Local time</span>
-              </div>
-              {upcoming.length ? (
-                <div className="upcoming-list">
-                  {upcoming.map((programme, i) => (
-                    <div
-                      className="upcoming-row"
-                      key={`${programme.start}-${programme.title}`}
-                    >
-                      <span className="upcoming-time">
-                        {time(programme.start)}
-                      </span>
-                      <div>
-                        <strong>{programme.title}</strong>
-                        <span>
-                          {Math.round((programme.end - programme.start) / 60)}{" "}
-                          min
-                          {programme.category ? ` · ${programme.category}` : ""}
-                        </span>
-                      </div>
-                      {i === 0 && <span className="next-tag">NEXT</span>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted-text">
-                  No upcoming programmes are available. Refresh the guide to
-                  check for updates.
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="viewing-welcome">
-              <div>
-                <span className="eyebrow">
-                  A LITTLE LESS SCROLLING. A LOT MORE WATCHING.
-                </span>
-                <h1>Make yourself at home.</h1>
-                <p>
-                  Your channels, live programmes and favorites.
-                  <br />
-                  Everything you need for a good evening.
-                </p>
-              </div>
-              <span className="welcome-decoration">
-                <Radio size={32} />
-              </span>
-            </div>
+          <div className="volume-controls">
+            <button
+              className="icon-button"
+              aria-label={p.status.volume ? "Mute audio" : "Unmute audio"}
+              onClick={() => p.onAction("volume", p.status.volume ? 0 : 80)}
+            >
+              {p.status.volume ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </button>
+            <input
+              className="volume-slider"
+              type="range"
+              min="0"
+              max="100"
+              aria-label="Volume"
+              value={p.status.volume}
+              onChange={(e) => p.onAction("volume", Number(e.target.value))}
+            />
+          </div>
+          {p.fullscreen && (
+            <span className="playback-status">{stateLabel}</span>
           )}
         </div>
-      )}
+        {!p.fullscreen && next && (
+          <div className="up-next">
+            <span>UP NEXT</span>
+            <time>{time(next.start)}</time>
+            <strong>{next.title}</strong>
+          </div>
+        )}
+        {!p.fullscreen &&
+          p.status.state === "playing" &&
+          p.status.width > 0 && (
+            <span className="stream-detail">
+              {p.status.width} × {p.status.height}
+            </span>
+          )}
+      </div>
     </section>
   );
 }

@@ -1,5 +1,17 @@
 ## Development Workflow
 
+### Cross-platform consistency
+
+VektorTV includes native iOS/iPadOS and tvOS apps **and a Tauri 2 desktop app for Windows 11 and macOS**. Treat all of them as maintained product surfaces.
+
+- For every change to shared UI, visual design, navigation, features, playback behavior, configuration or the Rust core, assess its impact on both the native Apple apps and the Tauri 2 builds.
+- When a change can affect the desktop experience, implement the corresponding updates in the Tauri React interface and/or Rust platform code in the same work. A native Apple UI redesign is incomplete until the applicable design changes reach Windows and macOS as well.
+- Preserve appropriate platform-specific input, windowing, playback and credential-storage behavior. Record intentional platform differences in the documentation instead of silently leaving a platform behind.
+- For affected Tauri changes, run frontend checks, build the affected Windows and macOS targets, and verify native playback/integration where the platform is available. Include desktop packaging and CI changes when needed. Report any unavailable platform or blocked verification explicitly; do not claim runtime verification from compilation alone.
+- Keep desktop versions, README, changelog and verification/release documentation current alongside the Apple release workflow below.
+
+### Required release workflow
+
 **IMPORTANT**: After any code change, bug fix, or feature addition/removal, you MUST complete all of these steps:
 
 1. **Update README.md** if the change affects:

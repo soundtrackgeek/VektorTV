@@ -53,6 +53,8 @@ export interface AppInfo {
   playerError: string | null;
   progress: SyncProgress;
   version: string;
+  platform: string;
+  credentialStorage: string;
 }
 export interface PlayerStatus {
   state: string;

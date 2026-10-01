@@ -3,10 +3,11 @@ name = "vektortv"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "A personal live television player for Windows"
+description = "A personal live television player for Windows and macOS"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+cc = "1"
 
 [dependencies]
 tauri = { version = "2", features = [] }
@@ -16,8 +17,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = "0.4"
 dotenvy = "0.15"
-keyring = { version = "3", features = ["windows-native"] }
+keyring = { version = "3" }
 libloading = "0.8"
 
 [target.'cfg(windows)'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }

@@ -1,10 +1,10 @@
 # VektorTV
 
-A personal IPTV player for **Windows 10/11 (64-bit), iOS/iPadOS 18+ and tvOS 18+**. Windows uses Tauri 2 and React/TypeScript; Apple devices use native SwiftUI and AVKit/AVPlayer. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
+A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI and AVKit/AVPlayer. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.3.0
+## Features in 0.4.0
 
-The Windows client includes:
+The Tauri desktop client includes:
 
 - Xtream account login or an HTTP M3U/M3U Plus playlist, with optional XMLTV guide.
 - Embedded VLC playback, including MPEG-TS and HLS, with pause/resume, stop, volume and fullscreen.
@@ -13,11 +13,13 @@ The Windows client includes:
 - SQLite metadata cache; successful channel imports become available while the guide continues loading. A failed import retains the previous snapshot.
 - Streaming XMLTV parsing with a bounded network queue. Guide imports retain six hours of past programmes and the next 48 hours; a 1 GiB input limit and 384 MiB matched-data working-set limit protect the app from excessively large feeds.
 - On-demand Xtream short EPG for a selected channel while the main guide is unavailable or still importing.
-- Windows Credential Manager protects the saved connection. Credentials and playback URLs are not stored in SQLite or browser storage.
+- Windows Credential Manager or macOS Keychain protects the saved connection. Credentials and playback URLs are not stored in SQLite or browser storage.
 - Window size/position, selected section and channel group survive restart. Playback starts only when a channel is chosen.
-- Playback stop, switching and shutdown run away from the Windows UI thread so VLC can finish native video cleanup without freezing the window.
+- Playback stop, switching and shutdown run away from the native UI thread so VLC can finish native video cleanup without freezing the window.
 
-The native Apple apps add HLS live playback, channel search/group filters, favorites/history, now/next and channel schedules. The Cinema Lounge interface gives Apple TV and wider iPad windows a channel sidebar beside a 16:9 inline player and programme details; compact iPhone/iPad windows stack the player with the channel list. Channel names and logos remain visible, with a white remote-focus outline separate from the teal playing-channel marker. Accounts are saved in Keychain. Apple TV metadata lives in its purgeable cache; favorites/history survive ordinary restarts but tvOS may reclaim that cache. A provider must supply streams/codecs AVPlayer supports; Windows VLC supports additional formats.
+The Cinema Lounge design is shared across desktop and native Apple: Watch/TV Guide navigation, a restrained charcoal/teal palette, real channel identities, a 16:9 viewing surface and programme details. Desktop keeps searchable groups, paginated lists, keyboard shortcuts and playback controls outside the native video surface.
+
+The native Apple apps add HLS live playback, channel search/group filters, favorites/history, now/next and channel schedules. The Cinema Lounge interface gives Apple TV and wider iPad windows a channel sidebar beside a 16:9 inline player and programme details; compact iPhone/iPad windows stack the player with the channel list. Channel names and logos remain visible, with a white remote-focus outline separate from the teal playing-channel marker. Accounts are saved in Keychain. Apple TV metadata lives in its purgeable cache; favorites/history survive ordinary restarts but tvOS may reclaim that cache. A provider must supply streams/codecs AVPlayer supports; desktop VLC supports additional formats.
 
 The app supplies no channels or subscription. Use your own authorized service. Movies/VOD, series, recording, catch-up, multiple providers and cross-device sync are future work.
 
@@ -53,7 +55,9 @@ The shared schemes include XCTest UI integration tests. Configure the simulator 
 
 The iOS and tvOS **0.3.0 (4)** builds are available in the **VektorTV Internal** TestFlight group. Both completed Apple processing and show **Testing** on 2026-10-01. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
 
-## Run the Windows app
+## Run the desktop app
+
+### Windows 11
 
 Requirements: Node.js 22+, Rust stable with the MSVC toolchain, Visual Studio C++ Build Tools and Windows WebView2. Install 64-bit VLC 3 from [VideoLAN](https://www.videolan.org/vlc/) for development; installer builds include the prepared runtime.
 
@@ -63,13 +67,27 @@ npm run prepare:vlc
 npm run desktop
 ```
 
+### macOS
+
+Requirements: Node.js 22+, Rust stable, Xcode Command Line Tools and VLC 3 matching your Mac's architecture. Install VLC from [VideoLAN](https://www.videolan.org/vlc/) into `/Applications` or `~/Applications`.
+
+```sh
+npm ci
+npm run prepare:vlc:mac
+npm run desktop
+```
+
+Mac uses a native AppKit video view with libVLC, WKWebView for the interface and Keychain for credentials. The bundled app includes VLC, so recipients do not need a separate VLC installation. The local Apple Silicon build is tested; Intel Macs need a separate x86_64 build with x86_64 VLC. Windows builds need the Windows toolchain and VLC DLLs; do not reuse a prepared runtime across platforms.
+
+### Connect and watch
+
 Open **Settings**, choose Xtream or M3U, enter the service details and select **Connect & load channels**. Xtream uses a base server address such as `http://provider.example:8080`; do not enter `get.php` as the server address. Its XMLTV endpoint is inferred unless an override is supplied.
 
 For M3U Plus, the usual query structure is `get.php?username=...&password=...&type=m3u_plus&output=ts`. The guide structure is `xmltv.php?username=...&password=...`.
 
 ### Local development credentials
 
-Copy `.env.example` to `.env` and set `iptv_username`, `iptv_password` and optionally `iptv_url`. Only the **debug Windows native application**, the explicit Apple simulator launcher and the explicitly invoked live-check example read this file. Debug first launch saves it in Windows Credential Manager if no saved connection exists. Release applications use Credential Manager or the Settings form; `.env` is never packaged.
+Copy `.env.example` to `.env` and set `iptv_username`, `iptv_password` and optionally `iptv_url`. Only the **debug Tauri application**, the explicit Apple simulator launcher and the explicitly invoked live-check example read this file. Debug first launch saves it in the platform credential store if no saved connection exists. Release desktop applications use the platform credential store or the Settings form; `.env` is never packaged.
 
 Do not prefix secrets with `VITE_`. `.env`, generated runtime files, local databases, screenshots and build artifacts are ignored by Git. Errors deliberately omit authenticated provider URLs.
 
@@ -86,7 +104,7 @@ npm run dev
 
 Open `http://127.0.0.1:1437/?demo=1` for **illustrative interface data**. A browser preview cannot access the saved account or play IPTV streams. The native app uses real commands and service data.
 
-Keyboard: `Ctrl K` searches, `Space` pauses/resumes outside form controls, `F` toggles fullscreen and `Esc` exits fullscreen. The native playback controls remain below the video surface so they stay clickable.
+Keyboard: `Ctrl K` on Windows or `Cmd K` on Mac searches, `Space` pauses/resumes outside form controls, `F` toggles fullscreen and `Esc` exits fullscreen. The native playback controls remain below the video surface so they stay clickable.
 
 ## Checks and packaging
 
@@ -102,12 +120,15 @@ cargo test --workspace
 npm run tauri -- build --no-bundle
 
 # NSIS installer including prepared VLC libraries/plugins and their license notices.
-npm run bundle
+npm run bundle:windows
+
+# macOS .app and .dmg with VLC libraries/plugins and license notices.
+npm run bundle:mac
 ```
 
-With this Cargo workspace, the release executable is `target/release/vektortv.exe`; the installer is under `target/release/bundle/nsis/`. Build files are intentionally not committed. The installer is unsigned; code signing and automatic updates are not configured.
+With this Cargo workspace, the release executable is `target/release/vektortv.exe`; the installer is under `target/release/bundle/nsis/`. Build files are intentionally not committed. The Windows installer is unsigned. Mac output is `target/release/bundle/macos/VektorTV.app` and `target/release/bundle/dmg/`; local builds use ad-hoc signing and are not notarized. Public Mac distribution needs Developer ID signing and notarization. Automatic updates are not configured. CI builds both desktop packages and publishes them as workflow artifacts.
 
-`scripts/prepare-vlc.ps1` copies the local VLC installation into an ignored resource directory without downloading or changing the installed VLC. Pass `-VlcDirectory` to use another 64-bit installation. VLC libraries/plugins remain governed by their own licenses; their original notices are included with the runtime. See [THIRD_PARTY.md](THIRD_PARTY.md).
+`scripts/prepare-vlc.ps1` copies the local VLC installation into an ignored resource directory without downloading or changing the installed VLC. Pass `-VlcDirectory` to use another 64-bit installation. VLC libraries/plugins remain governed by their own licenses; their original notices are included with the runtime. `scripts/prepare-vlc-macos.sh` copies the installed Mac runtime and downloads the matching installed VLC version’s license notices. Pass the VLC `.app` path to use another installation. The hardened Mac app permits loading VideoLAN-signed libraries through its library-validation entitlement; runtime libraries are loaded only from explicit bundle/install paths. See [THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## Shared architecture
 
@@ -115,13 +136,13 @@ With this Cargo workspace, the release executable is `target/release/vektortv.ex
 crates/vektortv-core     Domain models, M3U/XMLTV parsing, Xtream clients,
                        Unicode-aware search, favorites/history and SQLite
          |
-src-tauri               Windows shell, keyring, commands, embedded libVLC
+src-tauri               Windows/macOS shell, keyring, commands, embedded libVLC
          |
 src                     React/TypeScript interface
 ```
 
 The shared core has no Tauri, Win32, UI or playback-engine dependencies. Native platform shells own credentials and playback; the core owns metadata and business logic. Sensitive M3U stream locations remain in an in-memory map. Xtream playback locations are constructed on demand from the keyring-held connection. Stable channel IDs are scoped to the service/account to avoid collisions when switching providers.
 
-`crates/vektortv-apple` exposes a narrow, owned-JSON C ABI to `apps/apple`, which contains the SwiftUI shells, Keychain storage and AVPlayer playback. Calls run on background queues. Rust locks SQLite only during metadata operations; guide downloads do not hold the library lock. Account namespaces and channel imports commit atomically, and account changes invalidate pending guide/playlist responses. Xtream stream URLs are constructed as `.m3u8` for Apple and `.ts` for Windows. M3U stream URLs are used as supplied; incompatible streams show a retryable playback error.
+`crates/vektortv-apple` exposes a narrow, owned-JSON C ABI to `apps/apple`, which contains the SwiftUI shells, Keychain storage and AVPlayer playback. Calls run on background queues. Rust locks SQLite only during metadata operations; guide downloads do not hold the library lock. Account namespaces and channel imports commit atomically, and account changes invalidate pending guide/playlist responses. Xtream stream URLs are constructed as `.m3u8` for Apple and `.ts` for desktop VLC. M3U stream URLs are used as supplied; incompatible streams show a retryable playback error.
 
 See [docs/app-brief.md](docs/app-brief.md), [docs/design/direction.md](docs/design/direction.md) and [docs/verification.md](docs/verification.md).

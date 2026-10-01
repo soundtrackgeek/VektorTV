@@ -92,11 +92,13 @@ const previewInfo: AppInfo = {
   playerAvailable: true,
   playerError: null,
   progress: { phase: "", active: false, message: "" },
-  version: "0.1.0",
+  version: "0.4.0",
+  platform: "preview",
+  credentialStorage: "the operating system credential store",
 };
 function desktopRequired(): never {
   throw new Error(
-    "Open the Windows app to connect your service. Browser previews do not access credentials or play IPTV streams.",
+    "Open the desktop app to connect your service. Browser previews do not access credentials or play IPTV streams.",
   );
 }
 export const api = {

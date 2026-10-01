@@ -1,7 +1,16 @@
-import { Search, Star, ChevronDown, Radio, LoaderCircle } from "lucide-react";
+import {
+  Search,
+  Star,
+  ChevronDown,
+  Tv,
+  LoaderCircle,
+  RefreshCw,
+  X,
+  History,
+  Volume2,
+} from "lucide-react";
 import { useRef } from "react";
 import type { Channel, Group, View } from "../types";
-import { progress } from "../utils";
 
 export function ChannelLogo({
   channel,
@@ -11,14 +20,8 @@ export function ChannelLogo({
   large?: boolean;
 }) {
   return (
-    <div
-      className={`channel-logo ${large ? "large" : ""}`}
-      style={
-        {
-          "--channel-hue": `${Array.from(channel.name).reduce((a, c) => a + c.charCodeAt(0), 0) % 360}`,
-        } as React.CSSProperties
-      }
-    >
+    <div className={`channel-logo ${large ? "large" : ""}`} aria-hidden="true">
+      <Tv size={20} />
       {channel.logo && (
         <img
           src={channel.logo}
@@ -30,11 +33,9 @@ export function ChannelLogo({
           }}
         />
       )}
-      <span>{channel.name.replace(/^\W+/, "").slice(0, 3).toUpperCase()}</span>
     </div>
   );
 }
-
 interface Props {
   channels: Channel[];
   groups: Group[];
@@ -49,36 +50,89 @@ interface Props {
   loading: boolean;
   onMore: () => void;
   view: View;
+  onView: (view: View) => void;
   now: number;
   searchRef: React.RefObject<HTMLInputElement | null>;
+  onRefresh: () => void;
+  refreshing: boolean;
+  configured: boolean;
 }
 export default function ChannelBrowser(p: Props) {
   const listRef = useRef<HTMLDivElement>(null);
-  const label =
-    p.view === "favorites"
-      ? "Favorites"
-      : p.view === "history"
-        ? "Recently watched"
-        : "Channels";
+  const resetScroll = () => listRef.current?.scrollTo(0, 0);
   return (
-    <aside className="channel-browser">
+    <aside className="channel-browser" aria-label="Channel browser">
       <div className="browser-heading">
-        <h2>{label}</h2>
-        <span className="count-badge">{p.total.toLocaleString()}</span>
+        <h2>Your channels</h2>
+        <button
+          className="icon-button"
+          aria-label="Refresh library"
+          disabled={!p.configured || p.refreshing}
+          onClick={p.onRefresh}
+        >
+          <RefreshCw size={18} className={p.refreshing ? "spin" : ""} />
+        </button>
+      </div>
+      <div className="library-tabs" aria-label="Channel library">
+        <button
+          className={
+            p.view !== "favorites" && p.view !== "history" ? "active" : ""
+          }
+          aria-pressed={p.view !== "favorites" && p.view !== "history"}
+          onClick={() => {
+            p.onView("live");
+            resetScroll();
+          }}
+        >
+          All channels
+        </button>
+        <button
+          className={p.view === "favorites" ? "active" : ""}
+          aria-pressed={p.view === "favorites"}
+          onClick={() => {
+            p.onView("favorites");
+            resetScroll();
+          }}
+        >
+          Favorites
+        </button>
+        <button
+          className={`history-filter ${p.view === "history" ? "active" : ""}`}
+          aria-label="Recently watched"
+          title="Recently watched"
+          aria-pressed={p.view === "history"}
+          onClick={() => {
+            p.onView("history");
+            resetScroll();
+          }}
+        >
+          <History size={18} />
+        </button>
       </div>
       <label className="search-field">
-        <Search size={17} />
+        <Search size={18} />
         <input
           ref={p.searchRef}
           aria-label="Search channels"
-          placeholder="Search channels…"
+          placeholder="Find a channel"
           value={p.search}
           onChange={(e) => {
             p.setSearch(e.target.value);
-            listRef.current?.scrollTo(0, 0);
+            resetScroll();
           }}
         />
-        <kbd>Ctrl K</kbd>
+        {p.search && (
+          <button
+            className="icon-button"
+            aria-label="Clear channel search"
+            onClick={() => {
+              p.setSearch("");
+              resetScroll();
+            }}
+          >
+            <X size={16} />
+          </button>
+        )}
       </label>
       <div className="group-select">
         <select
@@ -86,29 +140,17 @@ export default function ChannelBrowser(p: Props) {
           value={p.group}
           onChange={(e) => {
             p.setGroup(e.target.value);
-            listRef.current?.scrollTo(0, 0);
+            resetScroll();
           }}
         >
-          <option value="">All channels</option>
+          <option value="">All groups</option>
           {p.groups.map((g) => (
             <option key={g.name} value={g.name}>
               {g.name} ({g.count})
             </option>
           ))}
         </select>
-        <ChevronDown size={15} />
-      </div>
-      <div className="list-heading">
-        <span>
-          {p.view === "history" ? "YOUR RECENT CHANNELS" : "ON AIR NOW"}
-        </span>
-        <span>
-          {p.loading ? (
-            <LoaderCircle className="spin" size={13} />
-          ) : (
-            <Radio size={13} />
-          )}
-        </span>
+        <ChevronDown size={16} />
       </div>
       <div
         className="channel-list"
@@ -138,25 +180,25 @@ export default function ChannelBrowser(p: Props) {
               <div className="channel-copy">
                 <strong title={channel.name}>{channel.name}</strong>
                 <span title={channel.now?.title}>
-                  {channel.now?.title || "Programme unavailable"}
+                  {channel.now && channel.now.end > p.now
+                    ? channel.now.title
+                    : channel.group}
                 </span>
-                {channel.now && (
-                  <div className="tiny-progress">
-                    <i style={{ width: `${progress(channel.now, p.now)}%` }} />
-                  </div>
-                )}
               </div>
+              {p.selected === channel.id && (
+                <Volume2 className="playing-mark" size={18} />
+              )}
             </button>
             <button
               className={`favorite-button ${channel.favorite ? "is-favorite" : ""}`}
+              aria-label={`${channel.favorite ? "Unfavorite" : "Favorite"} ${channel.name}`}
               title={
                 channel.favorite ? "Remove from favorites" : "Add to favorites"
               }
-              aria-label={`${channel.favorite ? "Unfavorite" : "Favorite"} ${channel.name}`}
               onClick={() => p.onFavorite(channel)}
             >
               <Star
-                size={15}
+                size={17}
                 fill={channel.favorite ? "currentColor" : "none"}
               />
             </button>
@@ -171,14 +213,14 @@ export default function ChannelBrowser(p: Props) {
               </>
             ) : (
               <>
-                <Radio />
+                <Tv />
                 {p.search
                   ? "No channels match your search."
                   : p.view === "favorites"
                     ? "Star a channel to keep it here."
                     : p.view === "history"
                       ? "Channels appear here after playback starts."
-                      : "Refresh your library to load channels."}
+                      : "Connect or refresh your library to load channels."}
               </>
             )}
           </div>
@@ -190,15 +232,9 @@ export default function ChannelBrowser(p: Props) {
         )}
       </div>
       <div className="browser-footer">
-        <span className="signal-bars">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span>
-          {p.channels.length.toLocaleString()} of {p.total.toLocaleString()}{" "}
-          channels
-        </span>
+        {p.view === "history" ? "Recently watched · " : ""}
+        {p.channels.length.toLocaleString()} of {p.total.toLocaleString()}{" "}
+        channels
       </div>
     </aside>
   );

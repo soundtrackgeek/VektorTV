@@ -1,8 +1,16 @@
 use vektortv_core::provider::Connection;
 
+pub fn storage_name() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "macOS Keychain"
+    } else {
+        "Windows Credential Manager"
+    }
+}
+
 fn entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new("com.vektortv.desktop", "primary-provider-v1")
-        .map_err(|_| "Windows Credential Manager is unavailable.".to_owned())
+        .map_err(|_| format!("{} is unavailable.", storage_name()))
 }
 
 pub fn save(connection: &Connection) -> Result<(), String> {
@@ -10,7 +18,7 @@ pub fn save(connection: &Connection) -> Result<(), String> {
         .map_err(|_| "Could not prepare the connection.".to_owned())?;
     entry()?
         .set_password(&value)
-        .map_err(|_| "The connection could not be saved in Windows Credential Manager.".to_owned())
+        .map_err(|_| format!("The connection could not be saved in {}.", storage_name()))
 }
 
 pub fn load() -> Result<Option<Connection>, String> {
@@ -19,9 +27,10 @@ pub fn load() -> Result<Option<Connection>, String> {
             .map(Some)
             .map_err(|_| "The saved connection is unreadable. Reconnect in Settings.".to_owned()),
         Err(keyring::Error::NoEntry) => development_connection(),
-        Err(_) => {
-            Err("The saved connection could not be opened from Windows Credential Manager.".into())
-        }
+        Err(_) => Err(format!(
+            "The saved connection could not be opened from {}.",
+            storage_name()
+        )),
     }
 }
 
@@ -30,7 +39,11 @@ fn development_connection() -> Result<Option<Connection>, String> {
     if !cfg!(debug_assertions) {
         return Ok(None);
     }
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../.env");
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let path = [root.join("../.env"), root.join("../env")]
+        .into_iter()
+        .find(|path| path.is_file());
+    let Some(path) = path else { return Ok(None) };
     if !path.is_file() {
         return Ok(None);
     }

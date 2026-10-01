@@ -61,10 +61,9 @@ export default function Settings({
     <section className="settings-view">
       <div className="section-topline">
         <div>
-          <span className="eyebrow">MAKE IT YOURS</span>
-          <h1>Settings.</h1>
+          <h1>Settings</h1>
         </div>
-        <span className="version-tag">v{info?.version || "0.1.0"}</span>
+        <span className="version-tag">v{info?.version || "0.4.0"}</span>
       </div>
       <div className="settings-section">
         <div className="settings-section-title">
@@ -105,7 +104,7 @@ export default function Settings({
         {!native && (
           <div className="preview-notice">
             {demo ? "This is an illustrative interface preview. " : ""}Connect
-            your service in the Windows app.
+            your service in the desktop app.
           </div>
         )}
         <form onSubmit={save}>
@@ -192,7 +191,10 @@ export default function Settings({
           <div className="credential-note">
             <ShieldCheck size={16} />
             <span>
-              Account details are saved in Windows Credential Manager.
+              Account details are saved in{" "}
+              {info?.credentialStorage ||
+                "the operating system credential store"}
+              .
             </span>
           </div>
           {error && (
@@ -261,7 +263,14 @@ export default function Settings({
         <div className="settings-section-title">
           <MonitorPlay size={20} />
           <div>
-            <h2>Windows playback</h2>
+            <h2>
+              {info?.platform === "macos"
+                ? "Mac"
+                : info?.platform === "windows"
+                  ? "Windows"
+                  : "Desktop"}{" "}
+              playback
+            </h2>
             <p>Embedded VLC engine for live MPEG-TS and HLS streams.</p>
           </div>
           <span
@@ -284,7 +293,7 @@ export default function Settings({
             <kbd>Esc</kbd> Exit fullscreen
           </span>
           <span>
-            <kbd>Ctrl K</kbd> Search
+            <kbd>{info?.platform === "macos" ? "⌘ K" : "Ctrl K"}</kbd> Search
           </span>
         </div>
       </div>

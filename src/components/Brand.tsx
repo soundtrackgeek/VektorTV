@@ -12,11 +12,8 @@ export function Mark({ className = "" }: { className?: string }) {
 }
 export default function Brand() {
   return (
-    <div className="brand">
-      <Mark />
-      <span>
-        vektor<span className="brand-tv">tv</span>
-      </span>
+    <div className="brand" aria-label="VektorTV">
+      VEKTOR<span className="brand-tv">TV</span>
     </div>
   );
 }

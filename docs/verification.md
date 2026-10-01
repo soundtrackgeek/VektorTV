@@ -1,5 +1,11 @@
 # Verification
 
+## Desktop and Apple release — 0.4.0
+
+Checks on 2026-10-01: frontend lint/tests and Rust workspace tests/Clippy passed. The redesigned Tauri interface is shared by Windows and macOS. A packaged Mac debug app rendered live NRK1 MPEG-TS video at 1920 × 1080 and passed pause/resume, mute/unmute and Cmd-Q shutdown. Final release packaging and platform verification are in progress; results will be recorded below when complete.
+
+Released Xcode 26.6 built both native Apple 0.4.0 (5) archives. App Store Connect accepted the iOS upload at 19:37:48 and tvOS upload at 19:40:25 Europe/Oslo. Processing and VektorTV Internal availability still require confirmation. Native Apple interface behavior is unchanged from the verified 0.3.0 release.
+
 ## Native Apple apps — 0.3.0
 
 Local checks on macOS on 2026-10-01, using released Xcode 26.6 (17F113):

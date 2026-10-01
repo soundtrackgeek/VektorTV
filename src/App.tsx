@@ -1,18 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Tv,
-  CalendarDays,
-  Star,
-  History,
   Settings as SettingsIcon,
-  RefreshCw,
-  ChevronRight,
-  CircleHelp,
+  Search,
   LoaderCircle,
   X,
   AlertCircle,
-  Radio,
   Play,
+  Square,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -34,12 +28,6 @@ import type {
 } from "./types";
 import { errorText, RequestSequence } from "./utils";
 
-const navigation = [
-  { id: "live", label: "Live TV", icon: Tv },
-  { id: "guide", label: "TV Guide", icon: CalendarDays },
-  { id: "favorites", label: "Favorites", icon: Star },
-  { id: "history", label: "History", icon: History },
-] as const;
 const initialStatus: PlayerStatus = {
   state: "idle",
   channelId: null,
@@ -85,7 +73,6 @@ export default function App() {
   const [fullscreen, setFullscreen] = useState(false);
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
   const [elapsed, setElapsed] = useState(0);
-  const [help, setHelp] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const queries = useRef(new RequestSequence());
   const plays = useRef(new RequestSequence());
@@ -343,7 +330,7 @@ export default function App() {
         void toggleFullscreen();
         return;
       }
-      if (event.ctrlKey && event.key.toLowerCase() === "k") {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         if (view === "settings") setView("live");
         window.setTimeout(() => searchRef.current?.focus(), 0);
@@ -379,243 +366,195 @@ export default function App() {
   const go = (target: View) => {
     setView(target);
     setError(null);
-    setHelp(false);
   };
-  const titles = {
-    live: "Live television",
-    guide: "Programme guide",
-    favorites: "Your favorites",
-    history: "Recently watched",
-    settings: "Your workspace",
+  const openSearch = () => {
+    if (view === "settings") setView("live");
+    window.setTimeout(() => searchRef.current?.focus(), 0);
   };
   return (
     <div className={`app-shell ${fullscreen ? "is-fullscreen" : ""}`}>
       {!fullscreen && (
-        <aside className="navigation">
+        <header className="app-header">
           <Brand />
-          <div className="nav-caption">YOUR TELEVISION</div>
-          <nav>
-            {navigation.map((item) => (
-              <button
-                key={item.id}
-                className={view === item.id ? "active" : ""}
-                onClick={() => go(item.id)}
-              >
-                <item.icon size={19} />
-                <span>{item.label}</span>
-                {view === item.id && <i />}
-              </button>
-            ))}
+          <nav className="main-tabs" aria-label="Main navigation">
+            <button
+              className={
+                view !== "guide" && view !== "settings" ? "active" : ""
+              }
+              aria-current={
+                view !== "guide" && view !== "settings" ? "page" : undefined
+              }
+              onClick={() => go("live")}
+            >
+              Watch
+            </button>
+            <button
+              className={view === "guide" ? "active" : ""}
+              aria-current={view === "guide" ? "page" : undefined}
+              onClick={() => go("guide")}
+            >
+              TV Guide
+            </button>
           </nav>
-          <div className="nav-bottom">
-            {selected && status.channelId && (
-              <button className="mini-now-playing" onClick={() => go("live")}>
-                <span className="mini-playing-icon">
-                  <Play size={12} fill="currentColor" />
-                </span>
-                <span>
-                  <small>NOW PLAYING</small>
-                  <strong>{selected.name}</strong>
-                </span>
-                <ChevronRight size={14} />
-              </button>
-            )}
-            <button
-              className={`nav-settings ${view === "settings" ? "active" : ""}`}
-              onClick={() => go("settings")}
-            >
-              <SettingsIcon size={19} />
-              <span>Settings</span>
-            </button>
-            <button className="help-button" onClick={() => setHelp((v) => !v)}>
-              <CircleHelp size={17} />
-              <span>Quick help</span>
-            </button>
-            <div className="nav-signoff">
-              A better way to tune in.<span>VEKTORTV · WINDOWS</span>
-            </div>
-          </div>
-        </aside>
-      )}
-      <div className="workspace">
-        {!fullscreen && (
-          <header className="workspace-header">
-            <div className="breadcrumb">
-              <span>{titles[view]}</span>
-              <ChevronRight size={12} />
-              <strong>{group || "All channels"}</strong>
-            </div>
-            <div className="header-end">
-              {demo && <span className="preview-badge">INTERFACE PREVIEW</span>}
-              <span
-                className={`connection-dot ${info?.configured ? "connected" : ""}`}
-              />
-              <span>{info?.configured ? "Connected" : "Add a connection"}</span>
-              <span className="header-divider" />
-              <time>
-                {new Date(now * 1000).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </time>
-              <button
-                className="icon-button"
-                aria-label="Refresh library"
-                disabled={!info?.configured || progress.active}
-                onClick={() => void sync()}
-              >
-                <RefreshCw
-                  size={16}
-                  className={progress.active ? "spin" : ""}
-                />
-              </button>
-            </div>
-          </header>
-        )}
-        {!fullscreen && progress.active && (
-          <div className="sync-banner" role="status">
-            <LoaderCircle size={16} className="spin" />
-            <span>{progress.message}</span>
-            <small>{elapsed}s</small>
-          </div>
-        )}
-        {!fullscreen && error && (
-          <div className="error-banner" role="alert">
-            <AlertCircle size={16} />
-            <span>{error}</span>
-            <button aria-label="Dismiss error" onClick={() => setError(null)}>
-              <X size={15} />
-            </button>
-          </div>
-        )}
-        {!fullscreen && !progress.active && progress.phase === "warning" && (
-          <div className="warning-banner">
-            <AlertCircle size={15} />
-            <span>{progress.message}</span>
-            <button
-              aria-label="Dismiss guide warning"
-              onClick={() => setProgress((p) => ({ ...p, phase: "" }))}
-            >
-              <X size={15} />
-            </button>
-          </div>
-        )}
-        {help && !fullscreen && (
-          <div className="help-banner">
-            <Radio size={18} />
-            <p>
-              Choose a channel to watch live. Star channels to save them. Use
-              the TV Guide to browse programmes, and Settings to connect your
-              service.
-            </p>
+          <div className="header-actions">
+            {demo && <span className="preview-badge">Interface preview</span>}
             <button
               className="icon-button"
-              aria-label="Close help"
-              onClick={() => setHelp(false)}
+              aria-label="Find a channel"
+              title="Find a channel (⌘/Ctrl K)"
+              onClick={openSearch}
             >
-              <X size={16} />
+              <Search size={22} />
+            </button>
+            <button
+              className={`icon-button ${view === "settings" ? "is-active" : ""}`}
+              aria-label="Settings"
+              onClick={() => go("settings")}
+            >
+              <SettingsIcon size={22} />
+            </button>
+          </div>
+        </header>
+      )}
+      {!fullscreen && progress.active && (
+        <div className="sync-banner" role="status">
+          <LoaderCircle size={16} className="spin" />
+          <span>{progress.message}</span>
+          <small>{elapsed}s</small>
+        </div>
+      )}
+      {!fullscreen && error && (
+        <div className="error-banner" role="alert">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+          <button
+            className="icon-button"
+            aria-label="Dismiss error"
+            onClick={() => setError(null)}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+      {!fullscreen && !progress.active && progress.phase === "warning" && (
+        <div className="warning-banner" role="status">
+          <AlertCircle size={16} />
+          <span>{progress.message}</span>
+          <button
+            className="icon-button"
+            aria-label="Dismiss guide warning"
+            onClick={() => setProgress((p) => ({ ...p, phase: "" }))}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+      <main
+        className={`content ${view === "settings" ? "settings-content" : ""}`}
+      >
+        {view !== "settings" && !fullscreen && (
+          <ChannelBrowser
+            channels={page.channels}
+            groups={groups}
+            group={group}
+            setGroup={setGroup}
+            search={search}
+            setSearch={setSearch}
+            selected={status.channelId}
+            onSelect={(c) => {
+              if (view === "guide") setView("live");
+              void play(c);
+            }}
+            onFavorite={(c) => {
+              void favorite(c);
+            }}
+            total={page.total}
+            loading={loading}
+            onMore={() => {
+              void loadMore();
+            }}
+            view={view}
+            onView={go}
+            now={now}
+            searchRef={searchRef}
+            onRefresh={() => {
+              void sync();
+            }}
+            refreshing={progress.active}
+            configured={!!info?.configured}
+          />
+        )}
+        {view === "settings" && !fullscreen ? (
+          <Settings
+            info={info ? { ...info, progress } : null}
+            onSaved={() => {
+              void refreshInfo().then(() => sync());
+            }}
+            onRefresh={() => {
+              void sync();
+            }}
+            onDisconnected={() => {
+              setStatus(initialStatus);
+              setSelected(null);
+              void refreshInfo();
+            }}
+          />
+        ) : view === "guide" && !fullscreen ? (
+          <Guide
+            channels={page.channels}
+            now={now}
+            onWatch={(c) => {
+              setView("live");
+              void play(c);
+            }}
+          />
+        ) : (
+          <PlayerView
+            channel={selected}
+            schedule={schedule}
+            status={status}
+            info={info}
+            onPlay={() => {
+              if (selected) void play(selected);
+            }}
+            onAction={(a, v) => {
+              void action(a, v);
+            }}
+            onFullscreen={() => {
+              void toggleFullscreen();
+            }}
+            fullscreen={fullscreen}
+            now={now}
+            onFavorite={() => {
+              if (selected) void favorite(selected);
+            }}
+            error={playError}
+            onSettings={() => go("settings")}
+            onGuide={() => go("guide")}
+          />
+        )}
+      </main>
+      {!fullscreen &&
+        (view === "guide" || view === "settings") &&
+        selected &&
+        status.channelId && (
+          <div className="now-playing-bar">
+            <button onClick={() => go("live")}>
+              <Play size={17} />
+              <span>{selected.name}</span>
+              <small>Return to Watch</small>
+            </button>
+            <button
+              className="icon-button"
+              aria-label="Stop playback"
+              onClick={() => {
+                void action("stop");
+              }}
+            >
+              <Square size={16} />
             </button>
           </div>
         )}
-        <div
-          className={`content ${view === "settings" ? "settings-content" : ""}`}
-        >
-          {view !== "settings" && !fullscreen && (
-            <ChannelBrowser
-              channels={page.channels}
-              groups={groups}
-              group={group}
-              setGroup={setGroup}
-              search={search}
-              setSearch={setSearch}
-              selected={selected?.id || null}
-              onSelect={(c) => {
-                void play(c);
-              }}
-              onFavorite={(c) => {
-                void favorite(c);
-              }}
-              total={page.total}
-              loading={loading}
-              onMore={() => {
-                void loadMore();
-              }}
-              view={view}
-              now={now}
-              searchRef={searchRef}
-            />
-          )}
-          {view === "settings" && !fullscreen ? (
-            <Settings
-              info={info ? { ...info, progress } : null}
-              onSaved={() => {
-                void refreshInfo().then(() => sync());
-              }}
-              onRefresh={() => {
-                void sync();
-              }}
-              onDisconnected={() => {
-                setStatus(initialStatus);
-                void refreshInfo();
-              }}
-            />
-          ) : view === "guide" && !fullscreen ? (
-            <Guide
-              channels={page.channels}
-              now={now}
-              onWatch={(c) => {
-                setView("live");
-                void play(c);
-              }}
-            />
-          ) : (
-            <PlayerView
-              channel={selected}
-              schedule={schedule}
-              status={status}
-              info={info}
-              onPlay={() => {
-                if (selected) void play(selected);
-              }}
-              onAction={(a, v) => {
-                void action(a, v);
-              }}
-              onFullscreen={() => {
-                void toggleFullscreen();
-              }}
-              fullscreen={fullscreen}
-              now={now}
-              onFavorite={() => {
-                if (selected) void favorite(selected);
-              }}
-              error={playError}
-              onSettings={() => go("settings")}
-            />
-          )}
-        </div>
-        {!fullscreen && (
-          <footer className="workspace-footer">
-            <span>
-              <i className={progress.active ? "busy" : ""} />
-              {progress.active
-                ? "Refreshing library"
-                : info?.channelCount
-                  ? `${info.channelCount.toLocaleString()} channels in your library`
-                  : "Welcome to VektorTV"}
-            </span>
-            <span>
-              {demo
-                ? "Illustrative data · no stream connection"
-                : info?.guideUpdated
-                  ? `Guide updated ${new Date(info.guideUpdated * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                  : "Your television, on your terms."}
-              <span className="footer-brand">
-                VEKTOR<span>TV</span>
-              </span>
-            </span>
-          </footer>
-        )}
-      </div>
     </div>
   );
 }
