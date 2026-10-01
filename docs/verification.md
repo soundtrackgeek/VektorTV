@@ -2,17 +2,21 @@
 
 ## Desktop popout — 0.7.0
 
-Verification in progress on 2026-10-01 on Apple Silicon macOS with released Xcode 26.6 (17F113):
+Checks on 2026-10-01 on Apple Silicon macOS, using released Xcode 26.6 (17F113):
 
-- Frontend lint (zero warnings), both frontend tests, TypeScript/production build, workspace Clippy and formatting pass. All 21 Rust core/Apple bridge tests pass.
-- Browser demo checks at 1440 × 950, 640 × 408 and 360 × 250 show the compact player, Return to app and pressed Keep on top controls without clipping. Browser plugin is unavailable; Playwright CLI is used with illustrative data, which cannot prove native pinning/playback.
-- Local Mac app/ARM64 disk image built, and deep/strict signature verification passed. Native Mac testing has confirmed real NRK1 HD video before and after entering popout and the pin toggle's native command/pressed state. Further window interaction checks are in progress.
-- Both Apple 0.7.0 (10) Release archives succeeded; distribution uploads are underway. TestFlight processing and internal-group availability are not yet confirmed.
-- Initial CI run [36920020271](https://github.com/soundtrackgeek/VektorTV/actions/runs/36920020271) passed Windows, macOS and Apple checks/packages. Final CI will rerun after the native quit/recovery correction. Windows 11 is unavailable locally for interactive native verification.
+- Frontend lint (zero warnings), both frontend tests, TypeScript/production build, workspace Clippy and formatting passed. All **21 Rust core/Apple bridge tests** passed. The shared core and Apple application behavior are unchanged.
+- Browser flow: **Watch NRK 1 → Pop out → Keep on top → Full screen → Escape → Escape/Return to app**. Playwright CLI checked `http://127.0.0.1:1437/?demo=1` at **1440 × 950**, **640 × 408**, **360 × 250** and **402 × 874**. Browser plugin was unavailable. Page identity, meaningful rendering, absence of framework overlays, console health (zero warnings/errors), screenshots and target interactions passed. The minimum compact layout keeps every control visible; the mobile browsing layout has no horizontal document overflow. Browser fixtures cannot verify native playback or OS window stacking.
+- The packaged Mac app played real **1920 × 1080 NRK1 HD** video before and after switching into popout. Native title-bar dragging, edge resizing (down to approximately 442 × 298 points), pin/unpin command and pressed state, pause/resume, mute/unmute, fullscreen/Escape and Return to app were exercised. Returning preserved live playback and the channel search. Native video stayed within its surface and left the controls clickable.
+- Native Cmd-Q testing found that macOS termination can bypass Tauri's shutdown callback. The final implementation saves a small local browsing-geometry recovery file on entry to popout. Quit/relaunch restored the original **2204 × 1466 physical-pixel** browsing window and cleared pinning; successful recovery removed the file. Normal close-button verification is being completed against the final shutdown correction.
+- Final local Mac app and ARM64 disk image built, with deep/strict signature verification. Outputs: `target/release/bundle/macos/VektorTV.app` and `target/release/bundle/dmg/VektorTV_0.7.0_aarch64.dmg`.
+- Initial CI run [36920020271](https://github.com/soundtrackgeek/VektorTV/actions/runs/36920020271) passed all Windows, macOS and Apple checks/packages. Final CI is being rerun for the native shutdown/recovery corrections.
+- Both Apple **0.7.0 (10)** uploads succeeded (iOS **22:13:52**, tvOS **22:13:29 Europe/Oslo**) and completed processing. Both were visibly verified as **Testing** in **VektorTV Internal** at approximately **22:24**. Both archive manifests confirm the expected version/build. Subsequent code changes are desktop-only; the Apple archives contain the final Apple/core source. See [apple-release.md](apple-release.md).
 
-Intentional platform differences: desktop uses its existing VLC player window in compact mode, retaining native title-bar dragging and resizing. iOS/iPadOS/tvOS AVPlayer and touch/remote layouts are unchanged. Pinning follows OS stacking rules and does not override system dialogs or other full-screen spaces. Pin/popout state is transient; the normal browsing geometry is restored on Return/quit.
+Intentional platform differences: desktop reuses its VLC player window in compact mode, with native title-bar dragging and resizing; Return to app restores channel browsing. iOS/iPadOS/tvOS retain AVPlayer/touch/remote layouts. Pinning follows OS stacking rules and does not override system dialogs or other full-screen spaces. Pin/popout state is transient; browsing geometry is restored on Return or next launch.
 
-Local evidence: `/tmp/vektortv-070-{frontend,clippy,tests,mac-build}.log`, `/tmp/vektortv-070-preview-{popout,minimum}.png`, `/tmp/vektortv-070-{archive,upload}-{ios,tvos}.log`; archives/exports in `apps/apple/build/0.7.0-10/`. No credentials or test artifacts are committed.
+Evidence: `/tmp/vektortv-070-{frontend,clippy,tests,mac-final-build}.log`, `/tmp/vektortv-070-preview-{popout,minimum,return,mobile}.png`, `/tmp/vektortv-070-{archive,upload}-{ios,tvos}.log`; archives/exports in `apps/apple/build/0.7.0-10/`. Native screenshots were inspected through computer control. No credentials or test artifacts are committed.
+
+Limits: Windows 11 is unavailable locally for interactive native playback/window verification. Multi-monitor/DPI changes, Intel Macs, macOS 12, audio by listening, VoiceOver and prolonged viewing are unverified. The unchanged Apple UI integration suite was not rerun for this desktop-only feature; Release archives and CI simulator builds cover Apple compilation. Mac packages are ad-hoc signed and not notarized; Windows packages are unsigned.
 
 ## Automatic guide loading — 0.6.1
 

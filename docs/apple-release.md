@@ -2,9 +2,16 @@
 
 ## Desktop popout release — 0.7.0 (10)
 
-Both native Apple **0.7.0 (10)** Release archives succeeded with released Xcode **26.6 (17F113)** on 2026-10-01. Distribution exports/uploads are underway; Apple processing and availability in **VektorTV Internal** are not yet confirmed. Apple app behavior is unchanged; this release aligns versions with the Windows/macOS popout feature.
+**0.7.0 (10) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **22:24 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
 
-Archives/exports: `apps/apple/build/0.7.0-10/`. Local logs: `/tmp/vektortv-070-{archive,upload}-{ios,tvos}.log`. Verification status will be updated after distribution completes.
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.7.0 (10) | 2026-10-01 22:13:52 | Testing — VektorTV Internal | [iOS build 10](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/eb302e2f-5912-4e43-96ef-765f59712fad) |
+| tvOS | 0.7.0 (10) | 2026-10-01 22:13:29 | Testing — VektorTV Internal | [tvOS build 10](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/45945acf-b4b4-46c2-bfb7-9e9ad4d75815) |
+
+Apple app behavior and the shared Rust core are unchanged; this release aligns versions with the Windows/macOS popout feature. Both archive manifests confirm version 0.7.0/build 10. Later corrections are limited to desktop window lifecycle/geometry recovery and the browser demo version, and do not affect these Apple archives.
+
+Archives/exports: `apps/apple/build/0.7.0-10/`. Local logs: `/tmp/vektortv-070-{archive,upload}-{ios,tvos}.log`. No provider credentials are bundled. See [verification.md](verification.md) for desktop checks and platform limits.
 
 ## Automatic guide loading — 0.6.1 (9)
 

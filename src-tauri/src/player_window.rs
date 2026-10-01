@@ -53,29 +53,6 @@ impl PlayerWindow {
         })
     }
 
-    pub fn restore(&self, window: &WebviewWindow) -> Result<(), String> {
-        if self
-            .saved
-            .lock()
-            .map_err(|_| "Window controls are unavailable.")?
-            .is_none()
-        {
-            return Ok(());
-        }
-        if window.is_fullscreen().map_err(window_error)? {
-            window.set_fullscreen(false).map_err(window_error)?;
-            // AppKit exits a full-screen Space asynchronously. Keep its event
-            // loop free while waiting on this shutdown worker, then restore.
-            for _ in 0..40 {
-                if !window.is_fullscreen().map_err(window_error)? {
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(50));
-            }
-        }
-        self.set_popout(window, false)
-    }
-
     fn set_popout(&self, window: &WebviewWindow, enabled: bool) -> Result<(), String> {
         let mut saved = self
             .saved

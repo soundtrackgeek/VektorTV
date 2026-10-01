@@ -13,7 +13,6 @@ use std::{
     sync::{atomic::AtomicBool, Mutex},
 };
 use tauri::Manager;
-use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use vektortv_core::{provider::Connection, Store};
 
 struct AppState {
@@ -118,15 +117,8 @@ fn shutdown(app: &tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         let worker = app.clone();
         let _ = tauri::async_runtime::spawn_blocking(move || {
-            if let Some(window) = worker.get_webview_window("main") {
-                // Save the browsing geometry on quit, not the temporary popout size.
-                let _ = worker
-                    .state::<player_window::PlayerWindow>()
-                    .restore(&window);
-                // The plugin's Exit callback runs after windows are destroyed;
-                // update its cache now, before it can retain the popout size.
-                let _ = worker.save_window_state(StateFlags::all());
-            }
+            // Popout recovery stays on disk until the next launch. Resizing or
+            // saving plugin state during shutdown can deadlock native callbacks.
             let state = worker.state::<AppState>();
             // VLC may need AppKit/Win32 callbacks while releasing its video output.
             let player = state.player.lock().ok().and_then(|mut p| p.take());
