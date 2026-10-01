@@ -56,6 +56,7 @@ struct LibraryStatus: Decodable, Sendable {
     let channels: Int
     let updated: String?
     let guideUpdated: String?
+    let guideNeedsRefresh: Bool
 }
 struct ChannelQuery: Encodable, Sendable {
     var search = ""

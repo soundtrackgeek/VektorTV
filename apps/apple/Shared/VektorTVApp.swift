@@ -4,12 +4,21 @@ import SwiftUI
 struct VektorTVApp: App {
     @State private var library = LibraryStore()
     @State private var playback = PlaybackStore()
+    @Environment(\.scenePhase) private var scenePhase
     var body: some Scene {
         WindowGroup {
             RootView(library: library, playback: playback)
                 .tint(Theme.accent)
                 .preferredColorScheme(.dark)
-                .task { await library.start() }
+                .task(id: scenePhase) {
+                    guard scenePhase == .active else { return }
+                    await library.start()
+                    await library.refreshIfNeeded()
+                    while !Task.isCancelled {
+                        do { try await Task.sleep(for: .seconds(300)) } catch { return }
+                        await library.refreshIfNeeded()
+                    }
+                }
         }
     }
 }

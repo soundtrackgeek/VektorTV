@@ -89,6 +89,22 @@ impl Store {
             .connection
             .query_row("SELECT COUNT(*) FROM programmes", [], |r| r.get(0))?)
     }
+    /// Short EPG entries do not establish that the full searchable guide loaded.
+    /// Refresh independently of the catalog, including after an interrupted import.
+    pub fn guide_needs_refresh(&self, now: i64) -> Result<bool> {
+        let updated = self
+            .metadata("guide_updated")?
+            .and_then(|value| value.parse::<i64>().ok());
+        if updated.is_none_or(|updated| updated > now || now.saturating_sub(updated) >= 21600) {
+            return Ok(true);
+        }
+        let available: bool = self.connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM programmes p JOIN channels c ON c.id=p.channel_id WHERE p.end>?1 AND p.start<?2)",
+            params![now, now.saturating_add(172800)],
+            |row| row.get(0),
+        )?;
+        Ok(!available)
+    }
     pub fn all_channels(&self) -> Result<Vec<Channel>> {
         let mut statement = self.connection.prepare(
             "SELECT id,name,group_name,logo,epg_id,stream_id FROM channels ORDER BY position",
@@ -170,6 +186,11 @@ impl Store {
         Ok(())
     }
     pub fn replace_programmes(&mut self, programmes: &[Programme], updated_at: i64) -> Result<()> {
+        if programmes.is_empty() {
+            return Err(Error::Invalid(
+                "The guide contains no matching programmes for the current time window. The previous guide has been kept. Check the XMLTV source in Settings.".into(),
+            ));
+        }
         let tx = self.connection.transaction()?;
         tx.execute("DELETE FROM programmes", [])?;
         {
@@ -497,6 +518,77 @@ mod tests {
                 stream_id: Some(8),
             },
         ]
+    }
+    #[test]
+    fn full_guide_freshness_is_independent_of_channels_and_short_epg() {
+        let mut store = Store::open(":memory:").unwrap();
+        let now = 100_000;
+        store.replace_channels(&channels(), now).unwrap();
+        let event = Programme {
+            channel_id: "a".into(),
+            title: "News".into(),
+            description: String::new(),
+            start: now - 100,
+            end: now + 200_000,
+            category: String::new(),
+        };
+        store
+            .merge_programmes(std::slice::from_ref(&event))
+            .unwrap();
+        assert!(
+            store.guide_needs_refresh(now).unwrap(),
+            "Playing a channel cannot mark the full guide fresh"
+        );
+        store
+            .replace_programmes(std::slice::from_ref(&event), now)
+            .unwrap();
+        assert!(!store.guide_needs_refresh(now).unwrap());
+        assert!(!store.guide_needs_refresh(now + 21599).unwrap());
+        assert!(store.guide_needs_refresh(now + 21600).unwrap());
+        store.replace_channels(&channels(), now + 21600).unwrap();
+        assert!(
+            store.guide_needs_refresh(now + 21600).unwrap(),
+            "Refreshing channels cannot hide a stale guide"
+        );
+        assert!(
+            store.guide_needs_refresh(now - 1).unwrap(),
+            "Recover after a clock correction"
+        );
+        let expired = Programme { end: now, ..event };
+        store.replace_programmes(&[expired], now).unwrap();
+        assert!(
+            store.guide_needs_refresh(now).unwrap(),
+            "A recent import with expired coverage still needs refreshing"
+        );
+    }
+    #[test]
+    fn empty_guide_preserves_cached_programmes_and_search() {
+        let mut store = Store::open(":memory:").unwrap();
+        store.replace_channels(&channels(), 100).unwrap();
+        let event = Programme {
+            channel_id: "a".into(),
+            title: "News".into(),
+            description: String::new(),
+            start: 100,
+            end: 200,
+            category: String::new(),
+        };
+        store.replace_programmes(&[event], 100).unwrap();
+        assert!(store.replace_programmes(&[], 150).is_err());
+        assert_eq!(
+            store.metadata("guide_updated").unwrap().as_deref(),
+            Some("100")
+        );
+        assert_eq!(
+            store
+                .search_programmes(&ProgrammeQuery {
+                    search: "News".into(),
+                    ..Default::default()
+                })
+                .unwrap()
+                .total,
+            1
+        );
     }
     #[test]
     fn programme_index_backfills_cached_guides_and_survives_restart() {

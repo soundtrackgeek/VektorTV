@@ -1,5 +1,9 @@
 # Native Apple builds and TestFlight
 
+## Automatic guide loading — 0.6.1 (8)
+
+Release verification is in progress. Both targets use version **0.6.1 (8)** and released Xcode **26.6 (17F113)**. This release refreshes the full searchable guide on startup/resume independently of channel playback, exposes loading/failure status, and retains cached programmes after empty imports. Archive/export root: `apps/apple/build/0.6.1-8/`. Upload and internal availability have not yet been confirmed.
+
 ## TV Guide release — 0.6.0 (7)
 
 **0.6.0 (7) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group’s Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **21:27 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.

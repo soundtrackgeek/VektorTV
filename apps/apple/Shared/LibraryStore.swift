@@ -21,10 +21,13 @@ final class LibraryStore {
     var isLoadingGuide = false
     var message: String?
     var guideMessage: String?
+    var guideRevision = 0
     var startupComplete = false
     @ObservationIgnored private var core: CoreClient?
     @ObservationIgnored private var queryGeneration = 0
     @ObservationIgnored private var accountGeneration = 0
+    @ObservationIgnored private var checkingRefresh = false
+    @ObservationIgnored private var lastAutomaticCheck = Date.distantPast
 
     func start() async {
         guard !startupComplete else { return }
@@ -38,6 +41,7 @@ final class LibraryStore {
                 await reload()
                 await updateStatus()
                 if catalogCount == 0 { await connect(saved) }
+                else { Task { await self.refreshIfNeeded() } }
             }
             #if DEBUG
             if !hasAccount && ProcessInfo.processInfo.arguments.contains("--use-development-account") {
@@ -58,8 +62,8 @@ final class LibraryStore {
         guard let core else { throw AppFailure(message: "The local library is unavailable. Restart VektorTV.") }
         return try await core.call(request, as: type)
     }
-    func connect(_ candidate: ProviderConnection) async {
-        guard !isRefreshing else { return }
+    func connect(_ candidate: ProviderConnection, resetFilters: Bool = true) async {
+        guard !isRefreshing, !isLoadingGuide else { return }
         isRefreshing = true
         message = nil
         defer { isRefreshing = false }
@@ -70,8 +74,7 @@ final class LibraryStore {
             hasAccount = true
             accountGeneration += 1
             catalogCount = count
-            group = nil
-            countryCode = nil
+            if resetFilters { group = nil; countryCode = nil }
             try CredentialStore.save(candidate)
             await reload()
             Task { await self.refreshGuide() }
@@ -89,8 +92,30 @@ final class LibraryStore {
         defer { isLoadingGuide = false }
         do {
             let _: Int = try await call(CoreRequest(command: "guide"))
-            if account == accountGeneration && hasAccount { await reload() }
+            if account == accountGeneration && hasAccount {
+                guideRevision += 1
+                await reload()
+            }
         } catch { if account == accountGeneration && hasAccount { guideMessage = error.localizedDescription } }
+    }
+    func refreshIfNeeded() async {
+        guard hasAccount, !isRefreshing, !isLoadingGuide, !checkingRefresh,
+              Date.now.timeIntervalSince(lastAutomaticCheck) >= 300 else { return }
+        checkingRefresh = true
+        lastAutomaticCheck = .now
+        let account = accountGeneration
+        defer { checkingRefresh = false }
+        do {
+            let status: LibraryStatus = try await call(CoreRequest(command: "status"))
+            guard account == accountGeneration, hasAccount, !Task.isCancelled else { return }
+            catalogCount = status.channels
+            let updated = status.updated.flatMap(Double.init) ?? 0
+            if status.channels == 0 || Date.now.timeIntervalSince1970 - updated >= 21600 {
+                await connect(connection, resetFilters: false)
+            } else if status.guideNeedsRefresh {
+                await refreshGuide()
+            }
+        } catch { if account == accountGeneration { guideMessage = error.localizedDescription } }
     }
     func reload(more: Bool = false) async {
         queryGeneration += 1

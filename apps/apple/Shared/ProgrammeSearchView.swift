@@ -34,6 +34,12 @@ struct ProgrammeSearchView: View {
             }.font(Theme.detailFont)
             Text("All imported guides · \(whenLabel)\(country.isEmpty ? "" : " · " + (library.countries.first { $0.code == country }?.name ?? country))\(group.isEmpty ? "" : " · " + group)\(favoritesOnly ? " · Favorite channels" : "")")
                 .font(Theme.detailFont).foregroundStyle(Theme.muted)
+            if library.isLoadingGuide {
+                ProgressView("Loading the guide… Search results will update automatically.")
+            }
+            if let guideMessage = library.guideMessage {
+                Text("Guide: \(guideMessage)").font(Theme.detailFont).foregroundStyle(.orange)
+            }
             if loading { ProgressView("Searching programmes…") }
             if let message {
                 Text(message).foregroundStyle(.orange)

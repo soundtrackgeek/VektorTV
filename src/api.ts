@@ -140,10 +140,11 @@ const previewInfo: AppInfo = {
   programmeCount: 48,
   channelsUpdated: now,
   guideUpdated: now,
+  guideNeedsRefresh: false,
   playerAvailable: true,
   playerError: null,
   progress: { phase: "", active: false, message: "" },
-  version: "0.6.0",
+  version: "0.6.1",
   platform: "preview",
   credentialStorage: "the operating system credential store",
 };
@@ -322,9 +323,9 @@ export const api = {
       ? invoke<void>("save_connection", { connection })
       : desktopRequired(),
   disconnect: () => (native ? invoke<void>("disconnect") : desktopRequired()),
-  sync: () =>
+  sync: (guideOnly = false) =>
     native
-      ? invoke<SyncProgress>("sync_library")
+      ? invoke<SyncProgress>("sync_library", { guideOnly })
       : demo
         ? Promise.resolve({
             phase: "complete",

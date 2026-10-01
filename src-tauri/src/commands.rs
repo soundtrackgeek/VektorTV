@@ -51,6 +51,7 @@ pub struct AppInfo {
     programme_count: usize,
     channels_updated: Option<i64>,
     guide_updated: Option<i64>,
+    guide_needs_refresh: bool,
     player_available: bool,
     player_error: Option<String>,
     progress: SyncProgress,
@@ -96,6 +97,12 @@ fn app_info_inner(state: &AppState) -> Result<AppInfo> {
             .metadata("guide_updated")
             .map_err(|e| e.to_string())?
             .and_then(|s| s.parse().ok()),
+        guide_needs_refresh: connection
+            .as_ref()
+            .is_some_and(|c| c.guide_url().ok().flatten().is_some())
+            && store
+                .guide_needs_refresh(now())
+                .map_err(|e| e.to_string())?,
         player_available,
         player_error,
         progress,
@@ -277,7 +284,7 @@ fn progress(app: &AppHandle, phase: &str, message: &str, active: bool) {
 }
 
 #[tauri::command]
-pub async fn sync_library(app: AppHandle) -> Result<SyncProgress> {
+pub async fn sync_library(app: AppHandle, guide_only: Option<bool>) -> Result<SyncProgress> {
     let state = app.state::<AppState>();
     if state
         .syncing
@@ -293,13 +300,17 @@ pub async fn sync_library(app: AppHandle) -> Result<SyncProgress> {
         }
     }
     let _guard = Guard(&state.syncing);
-    progress(
-        &app,
-        "channels",
-        "Connecting and loading live channels…",
-        true,
-    );
-    let result = refresh(&app).await;
+    let result = if guide_only.unwrap_or(false) {
+        refresh_guide(&app).await
+    } else {
+        progress(
+            &app,
+            "channels",
+            "Connecting and loading live channels…",
+            true,
+        );
+        refresh(&app).await
+    };
     match &result {
         Ok(p) => progress(&app, &p.phase, &p.message, false),
         Err(error) => progress(&app, "error", error, false),
@@ -319,7 +330,6 @@ async fn refresh(app: &AppHandle) -> Result<SyncProgress> {
     for channel in &mut catalog.channels {
         channel.logo = provider::safe_logo(channel.logo.take(), &connection);
     }
-    let count = catalog.channels.len();
     {
         let mut store = lock(&state.store)?;
         store
@@ -338,10 +348,23 @@ async fn refresh(app: &AppHandle) -> Result<SyncProgress> {
             .map_err(|e| e.to_string())?;
     }
     *lock(&state.streams)? = catalog.streams;
+    refresh_guide(app).await
+}
+
+async fn refresh_guide(app: &AppHandle) -> Result<SyncProgress> {
+    let state = app.state::<AppState>();
+    let connection = lock(&state.connection)?
+        .clone()
+        .ok_or("Add an IPTV connection in Settings first.")?;
+    let client = provider::client().map_err(|e| e.to_string())?;
+    let channels = lock(&state.store)?
+        .all_channels()
+        .map_err(|e| e.to_string())?;
+    let count = channels.len();
     progress(
         app,
         "guide",
-        &format!("{count} channels ready. Loading the programme guide…"),
+        "Loading the programme guide for all channels…",
         true,
     );
     let Some(guide_url) = connection.guide_url().map_err(|e| e.to_string())? else {
@@ -349,7 +372,7 @@ async fn refresh(app: &AppHandle) -> Result<SyncProgress> {
             phase: "complete".into(),
             active: false,
             message: format!(
-                "{count} channels refreshed. Add an XMLTV address in Settings for the guide."
+                "{count} channels ready. Add an XMLTV address in Settings for the guide."
             ),
         });
     };
@@ -365,7 +388,7 @@ async fn refresh(app: &AppHandle) -> Result<SyncProgress> {
         let programmes = provider::guide(
             &client,
             guide_url,
-            catalog.channels,
+            channels,
             timestamp - 21600,
             timestamp + 172800,
         )
@@ -393,7 +416,7 @@ async fn refresh(app: &AppHandle) -> Result<SyncProgress> {
         Err(error) => Ok(SyncProgress {
             phase: "warning".into(),
             active: false,
-            message: format!("{count} channels refreshed. Guide unavailable: {error}"),
+            message: format!("{count} channels ready. Guide unavailable: {error}"),
         }),
     }
 }

@@ -58,6 +58,7 @@ export interface AppInfo {
   programmeCount: number;
   channelsUpdated: number | null;
   guideUpdated: number | null;
+  guideNeedsRefresh: boolean;
   playerAvailable: boolean;
   playerError: string | null;
   progress: SyncProgress;

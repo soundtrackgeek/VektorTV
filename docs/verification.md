@@ -1,5 +1,11 @@
 # Verification
 
+## Automatic guide loading — 0.6.1
+
+Verification in progress on 2026-10-01. The desktop cache reproduced the reported state: a recent channel timestamp, no completed full-guide timestamp, and only 586 short-guide programmes. BBC 1 and BBC 2 variants share their correct provider EPG IDs. Startup previously checked channel age only; native Apple restored the catalog without refreshing its guide.
+
+Workspace Rust tests (21 total), Clippy with warnings denied, frontend lint, tests and production build passed. New regressions cover short-guide entries not hiding a missing full import, stale/expired coverage, clock correction, and empty-import cache/search preservation. Runtime verification, desktop packaging/CI and native Apple 0.6.1 (8) distribution are pending; no availability claim is made here until confirmed.
+
 ## TV Guide release — 0.6.0
 
 Checks on 2026-10-01 on Apple Silicon macOS, using released Xcode 26.6 (17F113):

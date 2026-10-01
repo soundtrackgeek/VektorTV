@@ -2,7 +2,7 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI and AVKit/AVPlayer. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.6.0
+## Features in 0.6.1
 
 The Tauri desktop client includes:
 
@@ -36,6 +36,8 @@ Country assignment uses provider **group names**, with explicit country names an
 All country detection, favorite persistence and channel ordering use the same Rust core. Desktop loads local SVG files; Apple compiles the same SVGs into vector image assets. No network flag service or emoji font is used. Cached libraries are upgraded automatically. Country favorites are local, with the same tvOS cache-reclamation limitation as channel favorites. Asset sources and licenses are in [third-party/README.md](third-party/README.md).
 
 ## TV Guide and programme search
+
+The full guide loads automatically in the background on startup, independently of playback and channel-list freshness. All apps check again when resumed and every five minutes while active, refreshing guides older than six hours or with no current/upcoming coverage. Cached guide data remains usable during the download; open guides and programme searches update when it completes. Loading and provider/import failures are shown in the app. A missing or interrupted full import is retried even if some channels already have short-guide entries.
 
 On desktop, **TV Guide** scrolls up and down through the entire selected channel list. Additional channels load automatically as you approach the end, including groups larger than 100 channels; the time ruler stays visible. Single-click a programme for details, double-click it to switch to Watch and start its channel, or use **Watch channel live**. Selecting a future or past programme tunes the current live broadcast; recording and catch-up are not supported.
 

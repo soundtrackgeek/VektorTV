@@ -129,7 +129,7 @@ impl AppleCore {
             Request::Status => {
                 let state = self.state()?;
                 Ok(
-                    json!({"channels": if Self::ready(&state)? { state.store.channel_count()? } else { 0 }, "updated": state.store.metadata("channels_updated")?, "guideUpdated": state.store.metadata("guide_updated")?}),
+                    json!({"channels": if Self::ready(&state)? { state.store.channel_count()? } else { 0 }, "updated": state.store.metadata("channels_updated")?, "guideUpdated": state.store.metadata("guide_updated")?, "guideNeedsRefresh": Self::ready(&state)? && state.connection.as_ref().is_some_and(|c| c.guide_url().ok().flatten().is_some()) && state.store.guide_needs_refresh(now)?}),
                 )
             }
             Request::Refresh { connection } => {

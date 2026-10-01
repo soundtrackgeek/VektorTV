@@ -44,7 +44,7 @@ struct SettingsView: View {
                         Text(library.isRefreshing ? "Loading your channels…" : "Connect & load channels")
                         if library.isRefreshing { Spacer(); ProgressView() }
                     }
-                }.disabled(library.isRefreshing)
+                }.disabled(library.isRefreshing || library.isLoadingGuide)
             }
             if let message = library.message { Section { Text(message).foregroundStyle(.orange) } }
             if library.hasAccount {

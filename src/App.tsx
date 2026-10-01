@@ -103,46 +103,64 @@ export default function App() {
     setCountries(nextCountries);
     return nextInfo;
   }, []);
-  const sync = useCallback(async () => {
-    if (refreshing.current) return;
-    refreshing.current = true;
-    setError(null);
-    setElapsed(0);
-    setProgress({
-      phase: "channels",
-      active: true,
-      message: "Connecting and loading live channels…",
-    });
-    try {
-      const result = await api.sync();
-      setProgress(result);
-      await refreshInfo();
-      setRevision((v) => v + 1);
-    } catch (e) {
-      const message = errorText(e);
-      setError(message);
-      setProgress({ phase: "error", active: false, message });
-    } finally {
-      refreshing.current = false;
-    }
-  }, [refreshInfo]);
+  const sync = useCallback(
+    async (guideOnly = false) => {
+      if (refreshing.current) return;
+      refreshing.current = true;
+      setError(null);
+      setElapsed(0);
+      setProgress({
+        phase: guideOnly ? "guide" : "channels",
+        active: true,
+        message: guideOnly
+          ? "Loading the programme guide for all channels…"
+          : "Connecting and loading live channels…",
+      });
+      try {
+        const result = await api.sync(guideOnly);
+        setProgress(result);
+        await refreshInfo();
+        setRevision((v) => v + 1);
+      } catch (e) {
+        const message = errorText(e);
+        setError(message);
+        setProgress({ phase: "error", active: false, message });
+      } finally {
+        refreshing.current = false;
+      }
+    },
+    [refreshInfo],
+  );
   useEffect(() => {
     let current = true;
-    refreshInfo()
-      .then((next) => {
-        if (!current) return;
-        setProgress(next.progress);
-        if (
-          next.configured &&
-          native &&
-          (!next.channelsUpdated ||
-            Date.now() / 1000 - next.channelsUpdated > 21600)
-        )
-          void sync();
-      })
-      .catch((e) => {
-        if (current) setError(errorText(e));
-      });
+    // Check on launch, resume and during long sessions. Throttle failures as well
+    // as successes so repeated focus events cannot hammer the provider.
+    let lastCheck = 0;
+    const check = () => {
+      if (refreshing.current || Date.now() - lastCheck < 300000) return;
+      lastCheck = Date.now();
+      void refreshInfo()
+        .then((next) => {
+          if (!current) return;
+          setProgress(next.progress);
+          if (!native || !next.configured || next.progress.active) return;
+          if (
+            !next.channelCount ||
+            !next.channelsUpdated ||
+            Date.now() / 1000 - next.channelsUpdated >= 21600
+          ) {
+            void sync();
+          } else if (next.guideNeedsRefresh) {
+            void sync(true);
+          }
+        })
+        .catch((e) => {
+          if (current) setError(errorText(e));
+        });
+    };
+    check();
+    const timer = window.setInterval(check, 300000);
+    window.addEventListener("focus", check);
     let unlisten: (() => void) | undefined;
     if (native)
       void listen<SyncProgress>("sync-progress", (e) => {
@@ -158,6 +176,8 @@ export default function App() {
       });
     return () => {
       current = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", check);
       unlisten?.();
     };
   }, [refreshInfo, sync]);

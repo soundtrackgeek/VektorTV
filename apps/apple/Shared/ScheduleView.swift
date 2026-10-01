@@ -66,7 +66,7 @@ struct ScheduleContent: View {
             .frame(maxWidth: .infinity, alignment: .leading).padding(Theme.pageInset)
         }
         .background(Theme.background)
-        .task(id: "\(channel.id)|\(attempt)") {
+        .task(id: "\(channel.id)|\(attempt)|\(library.guideRevision)") {
             loading = true
             message = nil
             do {

@@ -2,6 +2,19 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.6.1] - 2026-10-01
+
+### Fixed
+
+- Load missing, stale or expired full guides automatically on startup and resume across Windows, macOS, iPhone, iPad and Apple TV, independently of channel-cache age and channel playback.
+- Check guide freshness during long sessions, throttle automatic retries, and refresh visible schedules/search results after a background import.
+- Preserve cached schedules and their search index when a provider returns no matching programmes; show the import failure instead of treating an empty guide as fresh.
+- Show background guide loading and failures in native Apple navigation and programme search.
+
+### Changed
+
+- Align desktop and native Apple versions at 0.6.1; increment the Apple build to 8.
+
 ## [0.6.0] - 2026-10-01
 
 ### Added

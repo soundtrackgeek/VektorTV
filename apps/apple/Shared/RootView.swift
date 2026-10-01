@@ -76,6 +76,10 @@ struct RootView: View {
                 if let message = library.message {
                     StatusBanner(message: message) { library.message = nil }
                 }
+                if library.isLoadingGuide {
+                    ProgressView("Loading the programme guide for all channels…")
+                        .font(Theme.detailFont).padding(8)
+                }
                 if let message = library.guideMessage {
                     StatusBanner(message: "Guide: \(message)") { library.guideMessage = nil }
                 }
