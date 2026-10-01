@@ -8,7 +8,8 @@ Local checks on macOS on 2026-10-01:
 - Reproduced the Apple TV search layout with the cached 54,745-channel catalog: the native inline keyboard and navigation title left only two complete rows visible, and the fallback TV symbol overlapped channel names.
 - The revised tvOS browser displays five complete rows plus part of a sixth at 1920 × 1080. Searching for `nrk`, completing the system keyboard with Done and scrolling retain that space; the focused row has a teal outline and readable text. Fallback logos fit within their reserved slots.
 - Three XCTest smoke checks passed using a temporary local harness and the simulator's saved account: remote scrolling down fifteen times and back up ten times, focus movement to favorite/info actions, search entry/completion and twelve downward moves through NRK results, and group chooser/TV Guide/schedule navigation with Back/Menu return. Focused controls remained within the viewport bounds during the scrolling checks.
-- README, changelog, native About text and generated Apple project versions were updated. The 0.2.1 (3) builds have not been uploaded to TestFlight; physical Apple TV and Siri Remote testing remain unverified.
+- Released Xcode 26.6 built iOS and tvOS Release device archives for version **0.2.1 (3)**. Both App Store Connect exports/uploads succeeded with automatic distribution signing, completed Apple processing and show **Testing** in **VektorTV Internal**.
+- README, changelog, native About text and generated Apple project versions were updated. `AGENTS.md` now requires both TestFlight uploads after every version bump. Physical Apple TV and Siri Remote testing remain unverified.
 
 ## Native Apple apps — 0.2.0
 

@@ -11,6 +11,10 @@ All notable changes are recorded here. Versions follow semantic versioning.
 - Scale the fallback TV logo to fit its reserved space so it cannot overlap channel names.
 - Start channel lists at the top when changing search, group or library section.
 
+### Changed
+
+- Require Release archives and TestFlight uploads for both native Apple apps after every version bump, with confirmed processing and availability in the internal testing group.
+
 ## [0.2.0] - 2026-09-30
 
 ### Added

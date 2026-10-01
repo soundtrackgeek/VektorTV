@@ -47,7 +47,9 @@ This reads the ignored `.env` (or the existing extensionless `env` file) and pas
 
 See [docs/apple-release.md](docs/apple-release.md) for archive/upload commands and TestFlight/Xcode Cloud setup.
 
-The iOS and tvOS **0.2.0 (2)** builds are available in the **VektorTV Internal** TestFlight group; the account holder is invited. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight). Enter your own IPTV credentials on each device. Xcode Cloud scripts are included for future workflow setup; these first builds were uploaded locally.
+Every version bump must include Release archives and TestFlight uploads for both native Apple apps, followed by verification that the builds are available in **VektorTV Internal**. This release requirement is recorded in [AGENTS.md](AGENTS.md).
+
+The iOS and tvOS **0.2.1 (3)** builds are available in the **VektorTV Internal** TestFlight group; the account holder is invited. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Xcode Cloud scripts are included for future workflow setup; these builds were uploaded locally.
 
 ## Run the Windows app
 

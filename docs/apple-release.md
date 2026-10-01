@@ -2,13 +2,15 @@
 
 Project: `apps/apple/VektorTV.xcodeproj`. Shared schemes: **VektorTV-iOS** and **VektorTV-tvOS**. Both use bundle identifier `com.soundtrackgeek.vektortv`, Apple team `3L5769JKCM`, version `0.2.1` and build `3`. [VektorTV in App Store Connect](https://appstoreconnect.apple.com/apps/6817723723) supports both platforms. Rust `1.98.1` provides ARM64 iOS/tvOS device and simulator targets; the core is statically linked.
 
-The 0.2.1 (3) sources include the Apple TV channel-browser layout fix. These builds have not yet been uploaded to TestFlight.
+On 2026-10-01, released Xcode 26.6 built both **0.2.1 (3)** Release archives with the Apple TV channel-browser layout fix. Both uploads succeeded, completed Apple processing and show **Testing** in **VektorTV Internal**.
 
-On 2026-09-30, both **0.2.0 (2)** builds uploaded and completed Apple processing. Their status is **Testing** in **VektorTV Internal**, with automatic distribution enabled and the account holder invited. Open the invitation in TestFlight on iPhone/iPad or Apple TV; enter your IPTV account in Settings. No provider credentials are included in the uploaded apps. [Internal builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds).
+The internal group has automatic distribution enabled and the account holder invited. Open the invitation in TestFlight on iPhone/iPad or Apple TV; enter your IPTV account in Settings. No provider credentials are included in the uploaded apps. [Internal builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds).
 
 ## Local distribution
 
-Sign into the team's Apple account in Xcode. Use a released Xcode for uploads. Build each archive from the repository root:
+Every version bump requires Release archives and uploads for both platforms, followed by confirmation that Apple has processed the builds and made them available in **VektorTV Internal**. A simulator build alone does not complete the release.
+
+Sign into the team's Apple account in Xcode. Use a released Xcode for uploads. When multiple Xcode versions are installed, prefix each command with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` to use the released toolchain (currently Xcode 26.6). Build each archive from the repository root:
 
 ```sh
 xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-iOS \
