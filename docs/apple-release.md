@@ -1,6 +1,8 @@
 # Native Apple builds and TestFlight
 
-Project: `apps/apple/VektorTV.xcodeproj`. Shared schemes: **VektorTV-iOS** and **VektorTV-tvOS**. Both use bundle identifier `com.soundtrackgeek.vektortv`, Apple team `3L5769JKCM`, version `0.2.1` and build `3`. [VektorTV in App Store Connect](https://appstoreconnect.apple.com/apps/6817723723) supports both platforms. Rust `1.98.1` provides ARM64 iOS/tvOS device and simulator targets; the core is statically linked.
+Project: `apps/apple/VektorTV.xcodeproj`. Shared schemes: **VektorTV-iOS** and **VektorTV-tvOS**. Both use bundle identifier `com.soundtrackgeek.vektortv`, Apple team `3L5769JKCM`, version `0.3.0` and build `4`. [VektorTV in App Store Connect](https://appstoreconnect.apple.com/apps/6817723723) supports both platforms. Rust `1.98.1` provides ARM64 iOS/tvOS device and simulator targets; the core is statically linked.
+
+**0.3.0 (4): verification and distribution in progress.** Do not treat this version as available until the status below is updated after Apple processing and internal-group verification.
 
 On 2026-10-01, released Xcode 26.6 built both **0.2.1 (3)** Release archives with the Apple TV channel-browser layout fix. Both uploads succeeded, completed Apple processing and show **Testing** in **VektorTV Internal**.
 
@@ -51,4 +53,4 @@ Apple TV metadata is in purgeable cache. Restart persistence is supported, but s
 
 ## Verification boundaries
 
-Simulator builds cover both platforms, real provider catalog/XMLTV imports, and iOS native playback/navigation checks. The tvOS catalog and interface were inspected; simulator input automation could not complete its playback/remote checks. Archives cover device compilation and distribution packaging. Physical iPhone/Apple TV audio/video, Siri Remote hardware, AirPlay, Picture in Picture, background behavior and long viewing sessions still need TestFlight device testing. Provider codecs and HLS availability vary by channel.
+Simulator checks cover iPhone, iPad and Apple TV layouts, real HLS playback, search, programme-guide/group navigation, favorite toggling, full-screen entry/return and explicit stop. Apple TV XCTest remote-navigation checks also keep focus visible through repeated list scrolling. Real provider catalog/XMLTV imports were verified in earlier releases. Archives cover device compilation and distribution packaging. Physical iPhone/Apple TV audio/video, Siri Remote hardware, AirPlay, Picture in Picture, background behavior and long viewing sessions still need TestFlight device testing. Provider codecs and HLS availability vary by channel.

@@ -1,9 +1,13 @@
-# Cinema direction
+# Cinema Lounge direction
 
-The user explicitly delegated the choice on 2026-09-30. Chosen direction: A / Cinema, a graphite player-first workspace with restrained teal accents, labeled navigation, a compact searchable channel pane, a dominant viewing surface and supporting programme detail/schedule.
+On 2026-10-01 the user selected their generated VektorTV mockup and authorized implementation with the reviewed refinements: real channel identity, source-correct video proportions, catalog search/group access and TV readability.
 
-Image generation rejected two attempts, so no successful generated reference exists. The implementation uses native text, layout and SVG icons. The concept's visual intent is recorded here rather than claiming a generated image was selected.
+The visual target uses a graphite viewing room, restrained teal accents, compact navigation, a channel column and a generous live picture above programme details. The native Apple implementation uses SwiftUI, SF Symbols and a real AVPlayer surface. The landscape in the concept represents live video; it is not bundled artwork or a promised programme-art service.
 
-Concept prompt: "High-fidelity Windows IPTV player named VektorTV. Dark graphite surfaces, subtle teal accents, crisp Segoe UI typography, narrow labeled navigation, compact searchable channel browser, dominant 16:9 player, current programme detail and upcoming schedule. Production-plausible desktop density, fine borders, restrained icons and no marketing hero."
+Apple TV and wider iPad windows use a two-column workspace. Compact windows stack player content and channels. Channel names and logos remain visible. White outlines mark remote focus while teal marks active playback; moving focus never starts a stream. Search opens the system editor on Apple TV, and groups remain searchable. Selecting a channel starts inline playback. Full screen is explicit, and Back returns to browsing without stopping the stream.
 
-Essential states: disconnected, empty library, import in progress with elapsed time, populated channel lists, unknown guide data, opening/buffering, playing, paused, stream failure, guide warning, settings and fullscreen. Preserve the hierarchy at 1440×940 and 1024×680; allow details to scroll without moving playback controls.
+The programme area supports missing guide data, loading, stream failures, retry, favorites, full schedule and stop. Programme progress is read-only. No VOD, catch-up, recording, recommendation service or additional provider features are implied.
+
+The Windows implementation retains its existing Cinema layout and native VLC integration in this release. Native Apple verification and distribution status are recorded in ../verification.md and ../apple-release.md.
+
+The supplied reference is preserved at cinema-lounge-reference.png. Device screenshots from verification are stored under ignored artifacts/.

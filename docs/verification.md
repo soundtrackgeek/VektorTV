@@ -1,5 +1,20 @@
 # Verification
 
+## Native Apple apps — 0.3.0
+
+Local checks on macOS on 2026-10-01, using released Xcode 26.6 (17F113):
+
+- iOS and tvOS Debug simulator builds and Release device archives succeeded for **0.3.0 (4)**. Archive metadata confirms the marketing version and build number on both platforms.
+- Apple TV 1080p / tvOS 26.5: all three checked-in XCTest integration tests passed, covering programme-guide/group navigation, fifteen downward and ten upward remote moves with visible-focus assertions, and search/live playback/full-screen return/stop. A final playback rerun also passed favorite toggling twice and restoring the original state.
+- iPhone 17 Pro / iOS 26.5: both guide/group and live-playback tests passed. The compact layout keeps the selected video and controls above the channel browser. Full-screen return preserves the selected stream; explicit Stop clears it.
+- iPad Pro 11-inch (M5) / iOS 26.5: both tests passed, including real live video, guide/group navigation, favorite round-trip, full-screen return and Stop. The portrait 834 × 1210-point window renders the two-column layout without clipping its controls.
+- Source mockup and rendered Apple TV screen were opened together and compared. iPhone and iPad runtime captures were also visually inspected. See [design-qa.md](../design-qa.md) for the final design comparison and intentional adaptations.
+- Local test results and captures: `artifacts/cinema-tvos-tests-4.xcresult`, `artifacts/cinema-tvos-playback-final.xcresult`, `artifacts/cinema-ios-tests-3.xcresult`, `artifacts/cinema-ipad-tests.xcresult`; final screenshots `artifacts/cinema-tvos.png`, `artifacts/cinema-iphone.png`, `artifacts/cinema-ipad.png`. These artifacts are ignored by Git.
+- Tests use the simulator's explicitly configured local account. No credentials or provider database are included in the app or test sources. Windows code and distribution are unchanged in this Apple interface release.
+- Distribution: both Release archives complete; App Store Connect upload/processing verification is in progress.
+
+Physical-device playback and audio, Siri Remote hardware, AirPlay, Picture in Picture, accessibility-size/VoiceOver behavior, split-window resizing and long viewing sessions remain unverified.
+
 ## Native Apple apps — 0.2.1
 
 Local checks on macOS on 2026-10-01:

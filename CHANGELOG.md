@@ -2,6 +2,21 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.3.0] - 2026-10-01
+
+### Added
+
+- Cinema Lounge viewing room for native Apple apps, with a channel sidebar and 16:9 inline live video on Apple TV and wide iPad windows, plus a stacked layout on compact screens.
+- Current programme details, live progress, next programme and playback actions beside the channel browser; channel context menus retain favorite and schedule access.
+- Search within channel groups and a playing-channel bar in the programme guide.
+- Checked-in iOS/tvOS UI integration targets for guide/group navigation, live playback, favorites, full-screen return and remote focus scrolling.
+
+### Changed
+
+- Preserve channel names and logos in quieter list rows; distinguish white remote focus from the teal currently playing marker.
+- Enter full screen explicitly and return to browsing without stopping playback. Stop remains an explicit playback action.
+- Use the native bundle version in About, and prepare iOS/tvOS version 0.3.0 (4).
+
 ## [0.2.1] - 2026-10-01
 
 ### Fixed

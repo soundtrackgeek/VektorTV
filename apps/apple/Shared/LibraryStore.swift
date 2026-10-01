@@ -110,11 +110,13 @@ final class LibraryStore {
         do { let status: LibraryStatus = try await call(CoreRequest(command: "status")); catalogCount = status.channels }
         catch { message = error.localizedDescription }
     }
-    func toggleFavorite(_ channel: Channel) async {
+    @discardableResult
+    func toggleFavorite(_ channel: Channel) async -> Bool {
         do {
             let _: Bool = try await call(CoreRequest(command: "favorite", id: channel.id, favorite: !channel.favorite))
             await reload()
-        } catch { message = error.localizedDescription }
+            return true
+        } catch { message = error.localizedDescription; return false }
     }
     func forget() async throws {
         try CredentialStore.delete()

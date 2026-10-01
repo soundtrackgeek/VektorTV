@@ -28,6 +28,7 @@ def configs(name, settings):
     return add(name + "Configs", "XCConfigurationList", buildConfigurations=ids, defaultConfigurationIsVisible=0, defaultConfigurationName="Release")
 
 sources = [add(str(path), "PBXFileReference", lastKnownFileType="sourcecode.swift", path=str(path.relative_to(root)), sourceTree="SOURCE_ROOT") for path in sorted((root / "Shared").glob("*.swift"))]
+test_source = add("UITestSource", "PBXFileReference", lastKnownFileType="sourcecode.swift", path="UITests/ViewingRoomUITests.swift", sourceTree="SOURCE_ROOT")
 privacy = add("Privacy", "PBXFileReference", lastKnownFileType="text.xml", path="Resources/PrivacyInfo.xcprivacy", sourceTree="SOURCE_ROOT")
 products = []
 targets = []
@@ -48,7 +49,7 @@ for name, sdk, family, deployment, assets in [
         PRODUCT_NAME="$(TARGET_NAME)", PRODUCT_BUNDLE_IDENTIFIER="com.soundtrackgeek.vektortv",
         DEVELOPMENT_TEAM="3L5769JKCM", CODE_SIGN_STYLE="Automatic", SDKROOT=sdk,
         SUPPORTED_PLATFORMS="iphoneos iphonesimulator" if sdk == "iphoneos" else "appletvos appletvsimulator",
-        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.2.1", CURRENT_PROJECT_VERSION="3",
+        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.3.0", CURRENT_PROJECT_VERSION="4",
         INFOPLIST_FILE=f"Resources/{assets}/Info.plist", SWIFT_VERSION="5.0",
         SWIFT_STRICT_CONCURRENCY="complete", SWIFT_OBJC_BRIDGING_HEADER="Bridge/BridgingHeader.h",
         ENABLE_USER_SCRIPT_SANDBOXING="NO", ENABLE_BITCODE="NO", GENERATE_INFOPLIST_FILE="NO",
@@ -63,13 +64,27 @@ for name, sdk, family, deployment, assets in [
         settings["ARCHS"] = "arm64"
     target = add(name, "PBXNativeTarget", name=name, productName=name, productReference=product, productType="com.apple.product-type.application", buildConfigurationList=configs(name, settings), buildPhases=[rust_phase, source_phase, framework_phase, resource_phase], buildRules=[], dependencies=[])
     targets.append(target)
+    test_name = name + "UITests"
+    test_product = add(test_name + "Product", "PBXFileReference", explicitFileType="wrapper.cfbundle", path=test_name + ".xctest", sourceTree="BUILT_PRODUCTS_DIR")
+    products.append(test_product)
+    test_sources = add(test_name + "Sources", "PBXSourcesBuildPhase", buildActionMask=2147483647, files=[add(test_name + "Source", "PBXBuildFile", fileRef=test_source)], runOnlyForDeploymentPostprocessing=0)
+    proxy = add(test_name + "Proxy", "PBXContainerItemProxy", containerPortal=identifier("Project"), proxyType=1, remoteGlobalIDString=target, remoteInfo=name)
+    dependency = add(test_name + "Dependency", "PBXTargetDependency", target=target, targetProxy=proxy)
+    test_settings = dict(PRODUCT_NAME="$(TARGET_NAME)", PRODUCT_BUNDLE_IDENTIFIER="com.soundtrackgeek.vektortv." + assets.lower() + "-uitests", SDKROOT=sdk,
+        DEVELOPMENT_TEAM="3L5769JKCM", CODE_SIGN_STYLE="Automatic", TARGETED_DEVICE_FAMILY=family,
+        SWIFT_VERSION="5.0", GENERATE_INFOPLIST_FILE="YES", TEST_TARGET_NAME=name, **{deployment:"18.0"})
+    test_target = add(test_name, "PBXNativeTarget", name=test_name, productName=test_name, productReference=test_product,
+        productType="com.apple.product-type.bundle.ui-testing", buildConfigurationList=configs(test_name, test_settings),
+        buildPhases=[test_sources], buildRules=[], dependencies=[dependency])
+    targets.append(test_target)
+    test_reference = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{test_target}" BuildableName="{test_name}.xctest" BlueprintName="{test_name}" ReferencedContainer="container:VektorTV.xcodeproj"/>'
     schemes = project / "xcshareddata/xcschemes"
     schemes.mkdir(parents=True, exist_ok=True)
     reference = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{target}" BuildableName="{name}.app" BlueprintName="{name}" ReferencedContainer="container:VektorTV.xcodeproj"/>'
     (schemes / f"{name}.xcscheme").write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion="2650" version="1.3">
  <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">{reference}</BuildActionEntry></BuildActionEntries></BuildAction>
- <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"/>
+ <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO">{test_reference}</TestableReference></Testables></TestAction>
  <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES"><BuildableProductRunnable runnableDebuggingMode="0">{reference}</BuildableProductRunnable></LaunchAction>
  <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES"><BuildableProductRunnable runnableDebuggingMode="0">{reference}</BuildableProductRunnable></ProfileAction>
  <AnalyzeAction buildConfiguration="Debug"/>
@@ -77,7 +92,7 @@ for name, sdk, family, deployment, assets in [
 </Scheme>
 ''')
 
-source_group = add("Shared", "PBXGroup", name="Shared", children=sources, sourceTree="<group>")
+source_group = add("Shared", "PBXGroup", name="Shared", children=sources + [test_source], sourceTree="<group>")
 resource_group = add("Resources", "PBXGroup", name="Resources", children=resource_refs, sourceTree="<group>")
 product_group = add("Products", "PBXGroup", name="Products", children=products, sourceTree="<group>")
 main_group = add("Main", "PBXGroup", children=[source_group, resource_group, product_group], sourceTree="<group>")

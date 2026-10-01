@@ -76,3 +76,13 @@ enum LibrarySection: String, CaseIterable, Identifiable {
         switch self { case .live: "tv"; case .favorites: "star"; case .history: "clock" }
     }
 }
+
+extension Programme {
+    func contains(_ date: Date) -> Bool { startsAt <= date && endsAt > date }
+    func progress(at date: Date) -> Double {
+        min(1, max(0, (date.timeIntervalSince1970 - Double(start)) / Double(max(1, end - start))))
+    }
+    func remainingMinutes(at date: Date) -> Int {
+        max(0, Int(ceil(endsAt.timeIntervalSince(date) / 60)))
+    }
+}

@@ -5,6 +5,18 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"4073764693B51EF0E8FB7325" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Shared/ChannelBrowser.swift";
+			"sourceTree" = "SOURCE_ROOT";
+		};
+		"038F837EDC4D40A0B79B3A61" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Shared/CinemaTheme.swift";
+			"sourceTree" = "SOURCE_ROOT";
+		};
 		"C8ED8C55BB89F352041BA50E" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -59,6 +71,18 @@
 			"path" = "Shared/VektorTVApp.swift";
 			"sourceTree" = "SOURCE_ROOT";
 		};
+		"75A81EEC503BDBE7E02DA651" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Shared/ViewingRoom.swift";
+			"sourceTree" = "SOURCE_ROOT";
+		};
+		"0E8330815093FF36160824F6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "UITests/ViewingRoomUITests.swift";
+			"sourceTree" = "SOURCE_ROOT";
+		};
 		"54A57C3147C49F33DE5898B8" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "text.xml";
@@ -76,6 +100,14 @@
 			"explicitFileType" = "wrapper.application";
 			"path" = "VektorTV-iOS.app";
 			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"8B63ABFE9ACF888DF51C5E0E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "4073764693B51EF0E8FB7325";
+		};
+		"3457827DB6D064659D79626D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "038F837EDC4D40A0B79B3A61";
 		};
 		"593D61BBC1DF81A17A49259E" = {
 			"isa" = "PBXBuildFile";
@@ -113,10 +145,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "C6B2AFFA469DF44709C27DE8";
 		};
+		"81458675DCDFF6A79689FB47" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "75A81EEC503BDBE7E02DA651";
+		};
 		"C7FE127BA8809D9EC6C908C0" = {
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
+				"8B63ABFE9ACF888DF51C5E0E",
+				"3457827DB6D064659D79626D",
 				"593D61BBC1DF81A17A49259E",
 				"1D39F724DE122CA2F6EC9F40",
 				"1179C205D84468112D552DA7",
@@ -126,6 +164,7 @@
 				"AED055CD9263B5AAA5E18EB2",
 				"EEEAF2E87295A97F315151B0",
 				"84EDC4F9E59F406907E735C3",
+				"81458675DCDFF6A79689FB47",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
@@ -180,8 +219,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.2.1";
-				"CURRENT_PROJECT_VERSION" = "3";
+				"MARKETING_VERSION" = "0.3.0";
+				"CURRENT_PROJECT_VERSION" = "4";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -228,8 +267,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.2.1";
-				"CURRENT_PROJECT_VERSION" = "3";
+				"MARKETING_VERSION" = "0.3.0";
+				"CURRENT_PROJECT_VERSION" = "4";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -292,6 +331,99 @@
 			"dependencies" = (
 			);
 		};
+		"82E2216A82AD65DF5E817BF1" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"path" = "VektorTV-iOSUITests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"7CF8162506814F9B2D47875E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "0E8330815093FF36160824F6";
+		};
+		"0030A4E6ADB08F2F91436D7E" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"7CF8162506814F9B2D47875E",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"C7296067C3C3698C8DDA6787" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "985959785319747668373CC6";
+			"proxyType" = 1;
+			"remoteGlobalIDString" = "D01C38E1759FA1C366250D2B";
+			"remoteInfo" = "VektorTV-iOS";
+		};
+		"0A7215DBD4EC887C9FF38215" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "D01C38E1759FA1C366250D2B";
+			"targetProxy" = "C7296067C3C3698C8DDA6787";
+		};
+		"02AFA3C4B4A9026A79720F3F" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.soundtrackgeek.vektortv.ios-uitests";
+				"SDKROOT" = "iphoneos";
+				"DEVELOPMENT_TEAM" = "3L5769JKCM";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"SWIFT_VERSION" = "5.0";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "VektorTV-iOS";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "18.0";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+			};
+		};
+		"C83A130F634372A487F37329" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.soundtrackgeek.vektortv.ios-uitests";
+				"SDKROOT" = "iphoneos";
+				"DEVELOPMENT_TEAM" = "3L5769JKCM";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"SWIFT_VERSION" = "5.0";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "VektorTV-iOS";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "18.0";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "";
+			};
+		};
+		"31BC495F766AB45AE2C6D513" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"02AFA3C4B4A9026A79720F3F",
+				"C83A130F634372A487F37329",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"C464EFB9313F7C820BFB82F0" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "VektorTV-iOSUITests";
+			"productName" = "VektorTV-iOSUITests";
+			"productReference" = "82E2216A82AD65DF5E817BF1";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+			"buildConfigurationList" = "31BC495F766AB45AE2C6D513";
+			"buildPhases" = (
+				"0030A4E6ADB08F2F91436D7E",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"0A7215DBD4EC887C9FF38215",
+			);
+		};
 		"EA54BDB3E4A5270864951FE9" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "folder.assetcatalog";
@@ -303,6 +435,14 @@
 			"explicitFileType" = "wrapper.application";
 			"path" = "VektorTV-tvOS.app";
 			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"8FE21C2E62A4A73D073E3089" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "4073764693B51EF0E8FB7325";
+		};
+		"71CD902B9DE049A7B525B378" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "038F837EDC4D40A0B79B3A61";
 		};
 		"2A4B6276C39FA55DC8829EAB" = {
 			"isa" = "PBXBuildFile";
@@ -340,10 +480,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "C6B2AFFA469DF44709C27DE8";
 		};
+		"DB65F3749EA8EA2B27CFD36B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "75A81EEC503BDBE7E02DA651";
+		};
 		"77C236EA27FEBFC1C2DF12AA" = {
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
+				"8FE21C2E62A4A73D073E3089",
+				"71CD902B9DE049A7B525B378",
 				"2A4B6276C39FA55DC8829EAB",
 				"CBD9345C7BBF8F5781916F5D",
 				"C93469851EA3CD3C863D57D9",
@@ -353,6 +499,7 @@
 				"24DC84736EB7D928404CDADD",
 				"8AEB8E29DF09FF3F84CCD9C7",
 				"2EB1B8757CC63134C6787E14",
+				"DB65F3749EA8EA2B27CFD36B",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
@@ -407,8 +554,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.2.1";
-				"CURRENT_PROJECT_VERSION" = "3";
+				"MARKETING_VERSION" = "0.3.0";
+				"CURRENT_PROJECT_VERSION" = "4";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -456,8 +603,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.2.1";
-				"CURRENT_PROJECT_VERSION" = "3";
+				"MARKETING_VERSION" = "0.3.0";
+				"CURRENT_PROJECT_VERSION" = "4";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -521,10 +668,105 @@
 			"dependencies" = (
 			);
 		};
+		"631688AF045560E7FCE0F6F2" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"path" = "VektorTV-tvOSUITests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"1C446AB08E3833C8A0CF0FA2" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "0E8330815093FF36160824F6";
+		};
+		"66E151FDA9B909A54C4275BE" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"1C446AB08E3833C8A0CF0FA2",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"D2C33F0DEA5953C2158CEFAB" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "985959785319747668373CC6";
+			"proxyType" = 1;
+			"remoteGlobalIDString" = "D02D06AFC7E15A7FEFC8AA01";
+			"remoteInfo" = "VektorTV-tvOS";
+		};
+		"E31D352E3B6686EF4B46C014" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "D02D06AFC7E15A7FEFC8AA01";
+			"targetProxy" = "D2C33F0DEA5953C2158CEFAB";
+		};
+		"E5AF91C9C241EAED21ACF82B" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.soundtrackgeek.vektortv.tvos-uitests";
+				"SDKROOT" = "appletvos";
+				"DEVELOPMENT_TEAM" = "3L5769JKCM";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"TARGETED_DEVICE_FAMILY" = "3";
+				"SWIFT_VERSION" = "5.0";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "VektorTV-tvOS";
+				"TVOS_DEPLOYMENT_TARGET" = "18.0";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+			};
+		};
+		"F0F41C481651D2CC9A70FB80" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.soundtrackgeek.vektortv.tvos-uitests";
+				"SDKROOT" = "appletvos";
+				"DEVELOPMENT_TEAM" = "3L5769JKCM";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"TARGETED_DEVICE_FAMILY" = "3";
+				"SWIFT_VERSION" = "5.0";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "VektorTV-tvOS";
+				"TVOS_DEPLOYMENT_TARGET" = "18.0";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "";
+			};
+		};
+		"21AD2A096E21DB090ABF7F2E" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"E5AF91C9C241EAED21ACF82B",
+				"F0F41C481651D2CC9A70FB80",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"26CC4548700B2DD0F2A44F3A" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "VektorTV-tvOSUITests";
+			"productName" = "VektorTV-tvOSUITests";
+			"productReference" = "631688AF045560E7FCE0F6F2";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+			"buildConfigurationList" = "21AD2A096E21DB090ABF7F2E";
+			"buildPhases" = (
+				"66E151FDA9B909A54C4275BE",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"E31D352E3B6686EF4B46C014",
+			);
+		};
 		"E3C4B39D6D5013477C98CD58" = {
 			"isa" = "PBXGroup";
 			"name" = "Shared";
 			"children" = (
+				"4073764693B51EF0E8FB7325",
+				"038F837EDC4D40A0B79B3A61",
 				"C8ED8C55BB89F352041BA50E",
 				"553B2E649ED990F6743E3BB8",
 				"E3B8200B8415C74576A35987",
@@ -534,6 +776,8 @@
 				"5B76C50CB01CC6E46F3A5FD0",
 				"5FCAE691F777A764469140D8",
 				"C6B2AFFA469DF44709C27DE8",
+				"75A81EEC503BDBE7E02DA651",
+				"0E8330815093FF36160824F6",
 			);
 			"sourceTree" = "<group>";
 		};
@@ -552,7 +796,9 @@
 			"name" = "Products";
 			"children" = (
 				"6C0C9F99F02F92C9AA0D0FCA",
+				"82E2216A82AD65DF5E817BF1",
 				"0DF823CE837106E5E3A09D60",
+				"631688AF045560E7FCE0F6F2",
 			);
 			"sourceTree" = "<group>";
 		};
@@ -608,7 +854,17 @@
 						"DevelopmentTeam" = "3L5769JKCM";
 						"ProvisioningStyle" = "Automatic";
 					};
+					"C464EFB9313F7C820BFB82F0" = {
+						"CreatedOnToolsVersion" = "26.5";
+						"DevelopmentTeam" = "3L5769JKCM";
+						"ProvisioningStyle" = "Automatic";
+					};
 					"D02D06AFC7E15A7FEFC8AA01" = {
+						"CreatedOnToolsVersion" = "26.5";
+						"DevelopmentTeam" = "3L5769JKCM";
+						"ProvisioningStyle" = "Automatic";
+					};
+					"26CC4548700B2DD0F2A44F3A" = {
 						"CreatedOnToolsVersion" = "26.5";
 						"DevelopmentTeam" = "3L5769JKCM";
 						"ProvisioningStyle" = "Automatic";
@@ -629,7 +885,9 @@
 			"projectRoot" = "";
 			"targets" = (
 				"D01C38E1759FA1C366250D2B",
+				"C464EFB9313F7C820BFB82F0",
 				"D02D06AFC7E15A7FEFC8AA01",
+				"26CC4548700B2DD0F2A44F3A",
 			);
 		};
 	};

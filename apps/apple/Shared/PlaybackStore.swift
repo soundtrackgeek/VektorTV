@@ -16,7 +16,9 @@ final class PlaybackStore {
     @ObservationIgnored private var recordedID: String?
 
     func play(_ channel: Channel, library: LibraryStore) async {
+        let fullScreen = isPresented
         stop()
+        isPresented = fullScreen
         generation += 1
         let requestGeneration = generation
         self.channel = channel
@@ -50,9 +52,6 @@ final class PlaybackStore {
             }
             player.replaceCurrentItem(with: item)
             player.play()
-            #if os(tvOS)
-            isPresented = true
-            #endif
             timeoutTask = Task { [weak self] in
                 do { try await Task.sleep(for: .seconds(30)) } catch { return }
                 guard let self, requestGeneration == self.generation, self.isLoading else { return }
@@ -88,15 +87,58 @@ final class PlaybackStore {
 
 struct NativePlayer: UIViewControllerRepresentable {
     let player: AVPlayer
+    var onExit: () -> Void = {}
+    func makeCoordinator() -> Coordinator { Coordinator(onExit: onExit) }
+    final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
+        var onExit: () -> Void
+        init(onExit: @escaping () -> Void) { self.onExit = onExit }
+        #if os(tvOS)
+        func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool {
+            // SwiftUI owns the presentation. AVKit must not dismiss the hosting controller itself.
+            onExit()
+            return false
+        }
+        #endif
+    }
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
         controller.player = player
+        controller.delegate = context.coordinator
+        controller.view.accessibilityIdentifier = "full-screen-player"
         #if os(iOS)
         controller.allowsPictureInPicturePlayback = true
         #endif
         return controller
     }
     func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+        context.coordinator.onExit = onExit
         if controller.player !== player { controller.player = player }
     }
+    static func dismantleUIViewController(_ controller: AVPlayerViewController, coordinator: Coordinator) {
+        controller.delegate = nil
+        controller.player = nil
+    }
+}
+
+// A noninteractive AVPlayerLayer keeps remote focus in the channel browser and controls.
+// Only one player surface is attached at a time when entering or leaving full screen.
+struct InlinePlayer: UIViewRepresentable {
+    let player: AVPlayer
+    func makeUIView(context: Context) -> InlinePlayerView {
+        let view = InlinePlayerView()
+        view.isUserInteractionEnabled = false
+        view.playerLayer.videoGravity = .resizeAspect
+        view.playerLayer.player = player
+        return view
+    }
+    func updateUIView(_ view: InlinePlayerView, context: Context) {
+        if view.playerLayer.player !== player { view.playerLayer.player = player }
+    }
+    static func dismantleUIView(_ view: InlinePlayerView, coordinator: ()) {
+        view.playerLayer.player = nil
+    }
+}
+final class InlinePlayerView: UIView {
+    override class var layerClass: AnyClass { AVPlayerLayer.self }
+    var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
 }
