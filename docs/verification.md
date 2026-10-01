@@ -11,7 +11,7 @@ Local checks on macOS on 2026-10-01, using released Xcode 26.6 (17F113):
 - Source mockup and rendered Apple TV screen were opened together and compared. iPhone and iPad runtime captures were also visually inspected. See [design-qa.md](../design-qa.md) for the final design comparison and intentional adaptations.
 - Local test results and captures: `artifacts/cinema-tvos-tests-4.xcresult`, `artifacts/cinema-tvos-playback-final.xcresult`, `artifacts/cinema-ios-tests-3.xcresult`, `artifacts/cinema-ipad-tests.xcresult`; final screenshots `artifacts/cinema-tvos.png`, `artifacts/cinema-iphone.png`, `artifacts/cinema-ipad.png`. These artifacts are ignored by Git.
 - Tests use the simulator's explicitly configured local account. No credentials or provider database are included in the app or test sources. Windows code and distribution are unchanged in this Apple interface release.
-- Distribution: both Release archives complete; App Store Connect upload/processing verification is in progress.
+- Distribution: both **0.3.0 (4)** Release exports/uploads succeeded (iOS at 18:36:39 and tvOS at 18:39:00 Europe/Oslo). Apple completed processing, and both builds were visibly confirmed as **Testing** on the **VektorTV Internal** group Builds page. See [apple-release.md](apple-release.md) for direct build links and local release evidence.
 
 Physical-device playback and audio, Siri Remote hardware, AirPlay, Picture in Picture, accessibility-size/VoiceOver behavior, split-window resizing and long viewing sessions remain unverified.
 

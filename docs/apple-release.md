@@ -2,11 +2,18 @@
 
 Project: `apps/apple/VektorTV.xcodeproj`. Shared schemes: **VektorTV-iOS** and **VektorTV-tvOS**. Both use bundle identifier `com.soundtrackgeek.vektortv`, Apple team `3L5769JKCM`, version `0.3.0` and build `4`. [VektorTV in App Store Connect](https://appstoreconnect.apple.com/apps/6817723723) supports both platforms. Rust `1.98.1` provides ARM64 iOS/tvOS device and simulator targets; the core is statically linked.
 
-**0.3.0 (4): verification and distribution in progress.** Do not treat this version as available until the status below is updated after Apple processing and internal-group verification.
+**0.3.0 (4) is available in VektorTV Internal on both platforms.** On 2026-10-01, released Xcode 26.6 (17F113) built both Release archives. Automatic distribution exports/uploads succeeded, Apple completed processing, and the internal group's Builds page shows **Testing** for both iOS and tvOS.
+
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.3.0 (4) | 2026-10-01 18:36:39 | Testing — VektorTV Internal | [iOS build 4](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/154ff450-9a3d-4920-ad9f-94758d0c56fe) |
+| tvOS | 0.3.0 (4) | 2026-10-01 18:39:00 | Testing — VektorTV Internal | [tvOS build 4](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/881f435b-843a-4e6c-96f4-8209d5fc9479) |
+
+Local archives are under `apps/apple/build/0.3.0-4/`. Archive/upload logs are `artifacts/cinema-archive-ios.log`, `artifacts/cinema-archive-tvos.log`, `artifacts/cinema-upload-ios.log` and `artifacts/cinema-upload-tvos.log`. Each archive and export reports success. UI test and visual-review evidence are recorded in [verification.md](verification.md) and [design-qa.md](../design-qa.md).
 
 On 2026-10-01, released Xcode 26.6 built both **0.2.1 (3)** Release archives with the Apple TV channel-browser layout fix. Both uploads succeeded, completed Apple processing and show **Testing** in **VektorTV Internal**.
 
-The internal group has automatic distribution enabled and the account holder invited. Open the invitation in TestFlight on iPhone/iPad or Apple TV; enter your IPTV account in Settings. No provider credentials are included in the uploaded apps. [Internal builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds).
+The internal group has automatic distribution enabled and includes the account holder. Open VektorTV in TestFlight on iPhone/iPad or Apple TV to install or update; enter your IPTV account in Settings. No provider credentials are included in the uploaded apps. [Internal builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds).
 
 ## Local distribution
 

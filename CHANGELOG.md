@@ -15,7 +15,7 @@ All notable changes are recorded here. Versions follow semantic versioning.
 
 - Preserve channel names and logos in quieter list rows; distinguish white remote focus from the teal currently playing marker.
 - Enter full screen explicitly and return to browsing without stopping playback. Stop remains an explicit playback action.
-- Use the native bundle version in About, and prepare iOS/tvOS version 0.3.0 (4).
+- Use the native bundle version in About, and release iOS/tvOS version 0.3.0 (4) to VektorTV Internal TestFlight.
 
 ## [0.2.1] - 2026-10-01
 
