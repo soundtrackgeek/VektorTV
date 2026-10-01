@@ -2,6 +2,15 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.2.1] - 2026-10-01
+
+### Fixed
+
+- Apple TV channel search and browsing use the available screen height with a compact header and an on-demand system keyboard, replacing the oversized search/title area that left only two or three rows visible.
+- Keep the focused channel row visible while scrolling in either direction and moving between playback, favorite and programme-guide actions; highlight the full row.
+- Scale the fallback TV logo to fit its reserved space so it cannot overlap channel names.
+- Start channel lists at the top when changing search, group or library section.
+
 ## [0.2.0] - 2026-09-30
 
 ### Added

@@ -57,7 +57,7 @@ struct SettingsView: View {
                 }
             }
             Section("About VektorTV") {
-                Text("VektorTV 0.2.0 · Native Apple beta")
+                Text("VektorTV 0.2.1 · Native Apple beta")
                 Text("VektorTV supplies no channels. Use your own authorized IPTV subscription. Live playback uses HLS; availability and codecs depend on your provider.").font(.footnote).foregroundStyle(.secondary)
             }
         }

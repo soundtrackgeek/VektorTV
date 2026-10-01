@@ -76,6 +76,16 @@ struct ChannelBrowser: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
+                #if os(tvOS)
+                TextField("Find a channel", text: $library.search)
+                    .autocorrectionDisabled()
+                    .frame(width: 460)
+                    .accessibilityLabel("Find a channel")
+                if !library.search.isEmpty {
+                    Button { library.search = "" } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.borderless).accessibilityLabel("Clear channel search")
+                }
+                #endif
                 if library.isRefreshing { ProgressView() }
                 else { Button { Task { await library.connect(library.connection) } } label: { Image(systemName: "arrow.clockwise") }
                     .buttonStyle(.borderless).accessibilityLabel("Refresh channels and guide") }
@@ -106,34 +116,46 @@ struct ChannelBrowser: View {
                 ContentUnavailableView("No channels here", systemImage: library.section.symbol,
                     description: Text(library.section == .favorites ? "Save channels with the star button to find them here." : "Try another group or search, or refresh your account."))
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(library.channels) { channel in
-                            ChannelRow(channel: channel, selected: playback.channel?.id == channel.id,
-                                guide: guide,
-                                play: { Task { await playback.play(channel, library: library) } },
-                                favorite: { Task { await library.toggleFavorite(channel) } },
-                                schedule: { scheduleChannel = channel })
+                ScrollViewReader { scroll in
+                    ScrollView {
+                        LazyVStack(spacing: 10) {
+                            ForEach(library.channels) { channel in
+                                ChannelRow(channel: channel, selected: playback.channel?.id == channel.id,
+                                    guide: guide,
+                                    play: { Task { await playback.play(channel, library: library) } },
+                                    favorite: { Task { await library.toggleFavorite(channel) } },
+                                    schedule: { scheduleChannel = channel },
+                                    onFocus: { scroll.scrollTo(channel.id, anchor: .center) })
+                                    .id(channel.id)
+                            }
+                            if library.channels.count < library.total {
+                                Button { Task { await library.reload(more: true) } } label: {
+                                    if library.isLoading { ProgressView() }
+                                    else { Text("Load more · \(library.channels.count.formatted()) of \(library.total.formatted())") }
+                                }.disabled(library.isLoading).padding()
+                            }
                         }
-                        if library.channels.count < library.total {
-                            Button { Task { await library.reload(more: true) } } label: {
-                                if library.isLoading { ProgressView() }
-                                else { Text("Load more · \(library.channels.count.formatted()) of \(library.total.formatted())") }
-                            }.disabled(library.isLoading).padding()
-                        }
-                    }.padding()
-                    #if os(tvOS)
-                    .focusSection()
-                    #endif
+                        .padding()
+                        #if os(tvOS)
+                        .focusSection()
+                        #endif
+                    }
+                    // A new query starts at the top, including after an empty result.
+                    .id(queryKey)
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Theme.background)
-        .navigationTitle(guide ? "TV Guide" : "Watch")
         #if os(iOS)
+        .navigationTitle(guide ? "TV Guide" : "Watch")
         .navigationBarTitleDisplayMode(.inline)
-        #endif
         .searchable(text: $library.search, prompt: "Find a channel")
+        #else
+        // The native tvOS searchable container reserves space for an inline keyboard
+        // above the results even while browsing. TextField opens the system editor on demand.
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
         .task(id: queryKey) {
             do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
             await library.reload()
@@ -151,6 +173,16 @@ struct ChannelRow: View {
     let play: () -> Void
     let favorite: () -> Void
     let schedule: () -> Void
+    var onFocus: () -> Void = {}
+    #if os(tvOS)
+    @FocusState private var isFocused: Bool
+    #endif
+    private var backgroundColor: Color {
+        #if os(tvOS)
+        if isFocused { return Theme.accent.opacity(0.18) }
+        #endif
+        return selected ? Theme.accent.opacity(0.1) : Theme.surface
+    }
     var body: some View {
         HStack(spacing: 6) {
             Button(action: guide ? schedule : play) {
@@ -171,7 +203,11 @@ struct ChannelRow: View {
                     Image(systemName: guide ? "calendar" : selected ? "speaker.wave.2.fill" : "play.fill").foregroundStyle(Theme.accent)
                 }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
             }
+            #if os(tvOS)
+            .buttonStyle(ChannelRowButtonStyle())
+            #else
             .buttonStyle(.borderless)
+            #endif
             .layoutPriority(1)
             .accessibilityLabel("\(guide ? "Programme guide for" : "Watch") \(channel.name)")
             Button(action: favorite) { Image(systemName: channel.favorite ? "star.fill" : "star").foregroundStyle(channel.favorite ? Theme.accent : .secondary).padding(8) }
@@ -182,10 +218,32 @@ struct ChannelRow: View {
             }
         }
         .padding(.trailing, 6)
-        .background(selected ? Theme.accent.opacity(0.1) : Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .background(backgroundColor, in: RoundedRectangle(cornerRadius: 14))
         .overlay { RoundedRectangle(cornerRadius: 14).stroke(selected ? Theme.accent.opacity(0.6) : Color.white.opacity(0.05), lineWidth: 1) }
+        #if os(tvOS)
+        .overlay {
+            if isFocused {
+                RoundedRectangle(cornerRadius: 14).stroke(Theme.accent, lineWidth: 2)
+                    .allowsHitTesting(false)
+            }
+        }
+        // Track the whole row so play, favorite and guide focus all stay visible.
+        .focused($isFocused)
+        .onChange(of: isFocused) { _, focused in
+            if focused { onFocus() }
+        }
+        #endif
     }
 }
+
+#if os(tvOS)
+private struct ChannelRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        // The row supplies its own focus highlight without scaling into adjacent actions.
+        configuration.label.opacity(configuration.isPressed ? 0.8 : 1)
+    }
+}
+#endif
 
 struct ChannelLogo: View {
     let channel: Channel
@@ -193,7 +251,7 @@ struct ChannelLogo: View {
         AsyncImage(url: channel.logo.flatMap(URL.init(string:))) { image in
             image.resizable().scaledToFit()
         } placeholder: {
-            Image(systemName: "tv").font(.title2).foregroundStyle(Theme.accent.opacity(0.8))
+            Image(systemName: "tv").resizable().scaledToFit().foregroundStyle(Theme.accent.opacity(0.8))
         }.frame(width: 36, height: 36).padding(6).background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
             .accessibilityHidden(true)
     }

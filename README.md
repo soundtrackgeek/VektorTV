@@ -2,7 +2,7 @@
 
 A personal IPTV player for **Windows 10/11 (64-bit), iOS/iPadOS 18+ and tvOS 18+**. Windows uses Tauri 2 and React/TypeScript; Apple devices use native SwiftUI and AVKit/AVPlayer. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.2.0
+## Features in 0.2.1
 
 The Windows client includes:
 
@@ -34,6 +34,8 @@ open apps/apple/VektorTV.xcodeproj
 The Xcode build phase compiles `vektortv-apple` and links it into each native target. No Tauri webview, VLC, Node.js, XcodeGen or generated Swift bindings are needed. Regenerate the checked-in project or icon assets with `python3 apps/apple/scripts/generate-project.py` or `python3 apps/apple/scripts/generate-assets.py`.
 
 On first launch, enter your Xtream account in **Settings**; the server defaults to `http://ourxtream.com`. **Connect & load channels** imports the catalog before loading the guide in the background. Search and **All groups** narrow the channel list; **Live TV** switches to Favorites or Recently watched. Use the star to save a channel, the info button or **TV Guide** for its schedule, and select a channel to watch. iOS has **Full screen** and **Stop playback** buttons; the Apple TV remote's Back/Menu action returns to channels and stops playback.
+
+On Apple TV, select **Find a channel** in the compact header to open the system keyboard, then choose **Done** to browse results using the available screen height. The focused channel row is highlighted and stays visible when moving up/down or across to its star and guide buttons. **Clear channel search** restores the full list; changing search, group or library section starts at the top.
 
 After building/installing a Debug app on a booted simulator, explicitly inject the local development account:
 
