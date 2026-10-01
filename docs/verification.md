@@ -4,11 +4,11 @@
 
 Verification in progress on 2026-10-01 on Apple Silicon macOS with released Xcode 26.6 (17F113):
 
-- Frontend lint (zero warnings), both frontend tests, TypeScript/production build, workspace Clippy and formatting pass. All 19 Rust core/Apple bridge tests pass.
+- Frontend lint (zero warnings), both frontend tests, TypeScript/production build, workspace Clippy and formatting pass. All 21 Rust core/Apple bridge tests pass.
 - Browser demo checks at 1440 × 950, 640 × 408 and 360 × 250 show the compact player, Return to app and pressed Keep on top controls without clipping. Browser plugin is unavailable; Playwright CLI is used with illustrative data, which cannot prove native pinning/playback.
 - Local Mac app/ARM64 disk image built, and deep/strict signature verification passed. Native Mac testing has confirmed real NRK1 HD video before and after entering popout and the pin toggle's native command/pressed state. Further window interaction checks are in progress.
 - Both Apple 0.7.0 (10) Release archives succeeded; distribution uploads are underway. TestFlight processing and internal-group availability are not yet confirmed.
-- Windows/macOS packaging CI will run after the implementation push. Windows 11 is unavailable locally for interactive native verification.
+- Initial CI run [36920020271](https://github.com/soundtrackgeek/VektorTV/actions/runs/36920020271) passed Windows, macOS and Apple checks/packages. Final CI will rerun after the native quit/recovery correction. Windows 11 is unavailable locally for interactive native verification.
 
 Intentional platform differences: desktop uses its existing VLC player window in compact mode, retaining native title-bar dragging and resizing. iOS/iPadOS/tvOS AVPlayer and touch/remote layouts are unchanged. Pinning follows OS stacking rules and does not override system dialogs or other full-screen spaces. Pin/popout state is transient; the normal browsing geometry is restored on Return/quit.
 

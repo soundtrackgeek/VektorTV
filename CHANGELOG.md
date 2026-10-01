@@ -12,6 +12,7 @@ All notable changes are recorded here. Versions follow semantic versioning.
 ### Changed
 
 - Keep fullscreen, Escape, playback errors and native video sizing working in the compact desktop layout.
+- Recover the browsing window geometry after quitting in popout, including native macOS termination that bypasses the normal shutdown callback.
 - Align desktop and native Apple versions at 0.7.0; increment the Apple build to 10. Native iOS/iPadOS/tvOS playback layouts remain unchanged because desktop window controls do not apply to those platforms.
 
 ## [0.6.1] - 2026-10-01

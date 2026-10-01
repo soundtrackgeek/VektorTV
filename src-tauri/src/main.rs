@@ -13,6 +13,7 @@ use std::{
     sync::{atomic::AtomicBool, Mutex},
 };
 use tauri::Manager;
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use vektortv_core::{provider::Connection, Store};
 
 struct AppState {
@@ -24,12 +25,12 @@ struct AppState {
     syncing: AtomicBool,
     progress: Mutex<commands::SyncProgress>,
     closing: AtomicBool,
+    shutdown_complete: AtomicBool,
 }
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::default().build())
-        .manage(player_window::PlayerWindow::default())
         .setup(|app| {
             let data = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data)?;
@@ -38,6 +39,10 @@ fn main() {
             let window = app
                 .get_webview_window("main")
                 .ok_or("Main window missing")?;
+            app.manage(player_window::PlayerWindow::new(
+                &window,
+                data.join("player-window.json"),
+            )?);
             let resources = app.path().resource_dir()?;
             let player_result = player::Player::new(&window, &resources);
             let (player, error) = match player_result {
@@ -53,6 +58,7 @@ fn main() {
                 syncing: AtomicBool::new(false),
                 progress: Mutex::new(commands::SyncProgress::default()),
                 closing: AtomicBool::new(false),
+                shutdown_complete: AtomicBool::new(false),
             });
             Ok(())
         })
@@ -87,12 +93,15 @@ fn main() {
         .expect("VektorTV could not start")
         .run(|app, event| {
             // macOS Quit (Cmd-Q) does not send CloseRequested to the window.
-            if let tauri::RunEvent::ExitRequested {
-                api, code: None, ..
-            } = event
-            {
-                api.prevent_exit();
-                shutdown(app);
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                if !app
+                    .state::<AppState>()
+                    .shutdown_complete
+                    .load(std::sync::atomic::Ordering::SeqCst)
+                {
+                    api.prevent_exit();
+                    shutdown(app);
+                }
             }
         });
 }
@@ -111,10 +120,12 @@ fn shutdown(app: &tauri::AppHandle) {
         let _ = tauri::async_runtime::spawn_blocking(move || {
             if let Some(window) = worker.get_webview_window("main") {
                 // Save the browsing geometry on quit, not the temporary popout size.
-                let _ = window.set_fullscreen(false);
                 let _ = worker
                     .state::<player_window::PlayerWindow>()
                     .restore(&window);
+                // The plugin's Exit callback runs after windows are destroyed;
+                // update its cache now, before it can retain the popout size.
+                let _ = worker.save_window_state(StateFlags::all());
             }
             let state = worker.state::<AppState>();
             // VLC may need AppKit/Win32 callbacks while releasing its video output.
@@ -122,6 +133,9 @@ fn shutdown(app: &tauri::AppHandle) {
             drop(player);
         })
         .await;
+        app.state::<AppState>()
+            .shutdown_complete
+            .store(true, std::sync::atomic::Ordering::SeqCst);
         app.exit(0);
     });
 }
