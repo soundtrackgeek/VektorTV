@@ -2,7 +2,16 @@
 
 ## TV Guide release — 0.6.0 (7)
 
-Source and generated projects use **0.6.0 (7)** for both platforms. Release archives, App Store Connect uploads and VektorTV Internal processing verification are in progress; this section will record the actual outcomes.
+**0.6.0 (7) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group’s Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **21:27 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
+
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.6.0 (7) | 2026-10-01 21:20:01 | Testing — VektorTV Internal | [iOS build 7](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/974be56f-fe93-49c2-8d90-3e1a592aa136) |
+| tvOS | 0.6.0 (7) | 2026-10-01 21:19:43 | Testing — VektorTV Internal | [tvOS build 7](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/de31e4ec-0412-439e-bc16-a4ff80605122) |
+
+This release adds programme search across every imported guide, with time/country/group/favorites filters, indexed search for large caches, programme-to-live playback and automatic loading while scrolling guide channels. Native Apple keeps touch/remote schedule lists; desktop adds a virtualized timeline and double-click tuning. iPhone, iPad and Apple TV integration verification is recorded in [verification.md](verification.md).
+
+Archives/exports: `apps/apple/build/0.6.0-7/`. Local logs: `/tmp/vektortv-060-archive-ios.log`, `/tmp/vektortv-060-archive-tvos.log`, `/tmp/vektortv-060-upload-ios.log`, `/tmp/vektortv-060-upload-tvos.log`. Both archive manifests confirm version 0.6.0/build 7. No provider credentials are bundled.
 
 ## Countries release — 0.5.0 (6)
 
