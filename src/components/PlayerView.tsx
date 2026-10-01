@@ -13,6 +13,10 @@ import {
   Star,
   CalendarDays,
   AlertCircle,
+  PictureInPicture2,
+  PanelTop,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { api, demo } from "../api";
 import type { AppInfo, Channel, PlayerStatus, Programme } from "../types";
@@ -27,6 +31,11 @@ interface Props {
   onAction: (action: string, value?: number) => void;
   onFullscreen: () => void;
   fullscreen: boolean;
+  popout: boolean;
+  onTop: boolean;
+  windowBusy: boolean;
+  onPopout: () => void;
+  onToggleOnTop: () => void;
   now: number;
   onFavorite: () => void;
   error: string | null;
@@ -34,6 +43,7 @@ interface Props {
   onGuide: () => void;
 }
 export default function PlayerView(p: Props) {
+  const playerOnly = p.fullscreen || p.popout;
   const surface = useRef<HTMLDivElement>(null);
   const room = useRef<HTMLElement>(null);
   const active = ["opening", "buffering", "playing", "paused"].includes(
@@ -82,7 +92,7 @@ export default function PlayerView(p: Props) {
         .bounds({ x: 0, y: 0, width: 1, height: 1, visible: false })
         .catch(() => {});
     };
-  }, [active, p.fullscreen]);
+  }, [active, p.fullscreen, p.popout]);
   const current =
     p.schedule.find((s) => s.start <= p.now && s.end > p.now) ||
     (p.channel?.now && p.channel.now.start <= p.now && p.channel.now.end > p.now
@@ -103,7 +113,7 @@ export default function PlayerView(p: Props) {
   return (
     <section
       ref={room}
-      className={`viewing-room ${p.fullscreen ? "fullscreen-room" : ""}`}
+      className={`viewing-room ${playerOnly ? "fullscreen-room" : ""} ${p.popout ? "popout-room" : ""}`}
       aria-label="Viewing room"
     >
       <div className="viewing-content">
@@ -150,7 +160,7 @@ export default function PlayerView(p: Props) {
             </div>
           )}
         </div>
-        {!p.fullscreen && (
+        {!playerOnly && (
           <div className="programme-area">
             {p.channel ? (
               <>
@@ -203,14 +213,46 @@ export default function PlayerView(p: Props) {
         )}
         <div className="playback-controls">
           <button
-            className="primary-button full-screen-button"
+            className={
+              p.popout ? "icon-button" : "primary-button full-screen-button"
+            }
             onClick={p.onFullscreen}
-            disabled={!p.channel}
+            disabled={!p.channel || p.windowBusy}
+            aria-label={p.fullscreen ? "Exit full screen" : "Full screen"}
+            title={p.fullscreen ? "Exit full screen (Esc)" : "Full screen (F)"}
           >
             {p.fullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
-            {p.fullscreen ? "Exit full screen" : "Full screen"}
+            {!p.popout && (p.fullscreen ? "Exit full screen" : "Full screen")}
           </button>
           {!p.fullscreen && (
+            <>
+              <button
+                className={p.popout ? "icon-button" : "outline-button"}
+                onClick={p.onPopout}
+                disabled={p.windowBusy || (!p.popout && !p.channel)}
+                aria-label={p.popout ? "Return to app" : "Pop out player"}
+                title={p.popout ? "Return to app (Esc)" : "Pop out player"}
+              >
+                {p.popout ? (
+                  <PanelTop size={19} />
+                ) : (
+                  <PictureInPicture2 size={19} />
+                )}
+                {!p.popout && "Pop out"}
+              </button>
+              <button
+                className={`icon-button ${p.onTop ? "is-active" : ""}`}
+                onClick={p.onToggleOnTop}
+                disabled={p.windowBusy}
+                aria-label="Keep on top"
+                aria-pressed={p.onTop}
+                title={p.onTop ? "Turn off Keep on top" : "Keep on top"}
+              >
+                {p.onTop ? <PinOff size={19} /> : <Pin size={19} />}
+              </button>
+            </>
+          )}
+          {!playerOnly && (
             <>
               <button
                 className={`icon-button ${p.channel?.favorite ? "is-favorite" : ""}`}
@@ -284,24 +326,22 @@ export default function PlayerView(p: Props) {
               onChange={(e) => p.onAction("volume", Number(e.target.value))}
             />
           </div>
-          {p.fullscreen && (
+          {p.fullscreen && !p.popout && (
             <span className="playback-status">{stateLabel}</span>
           )}
         </div>
-        {!p.fullscreen && next && (
+        {!playerOnly && next && (
           <div className="up-next">
             <span>UP NEXT</span>
             <time>{time(next.start)}</time>
             <strong>{next.title}</strong>
           </div>
         )}
-        {!p.fullscreen &&
-          p.status.state === "playing" &&
-          p.status.width > 0 && (
-            <span className="stream-detail">
-              {p.status.width} × {p.status.height}
-            </span>
-          )}
+        {!playerOnly && p.status.state === "playing" && p.status.width > 0 && (
+          <span className="stream-detail">
+            {p.status.width} × {p.status.height}
+          </span>
+        )}
       </div>
     </section>
   );

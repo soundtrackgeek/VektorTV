@@ -1,5 +1,11 @@
 # Native Apple builds and TestFlight
 
+## Desktop popout release — 0.7.0 (10)
+
+Both native Apple **0.7.0 (10)** Release archives succeeded with released Xcode **26.6 (17F113)** on 2026-10-01. Distribution exports/uploads are underway; Apple processing and availability in **VektorTV Internal** are not yet confirmed. Apple app behavior is unchanged; this release aligns versions with the Windows/macOS popout feature.
+
+Archives/exports: `apps/apple/build/0.7.0-10/`. Local logs: `/tmp/vektortv-070-{archive,upload}-{ios,tvos}.log`. Verification status will be updated after distribution completes.
+
 ## Automatic guide loading — 0.6.1 (9)
 
 **0.6.1 (9) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **21:55 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives from the final source; automatic App Store distribution exports/uploads succeeded and Apple completed processing.

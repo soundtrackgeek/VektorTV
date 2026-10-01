@@ -1717,3 +1717,44 @@ svg {
   max-height: none;
   margin: 0;
 }
+
+/* The desktop popout keeps native title-bar dragging and edge resizing. */
+.app-shell.is-popout {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.is-popout .content {
+  flex-direction: row;
+}
+.popout-room {
+  padding: 0;
+  overflow: hidden;
+}
+.popout-room .viewing-content {
+  max-width: none;
+}
+.popout-room .playback-controls {
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 4px 8px;
+  min-height: 48px;
+}
+.popout-room .volume-controls {
+  margin-left: auto;
+}
+.popout-room .icon-button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-dark);
+}
+.popout-room .player-idle {
+  padding: 12px;
+  gap: 8px;
+}
+.popout-room .player-idle > svg {
+  width: 28px;
+  height: 28px;
+}
+.popout-room .player-idle h2 {
+  font-size: 17px;
+}

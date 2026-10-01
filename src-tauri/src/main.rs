@@ -6,6 +6,7 @@
 mod commands;
 mod credentials;
 mod player;
+mod player_window;
 
 use std::{
     collections::HashMap,
@@ -28,6 +29,7 @@ struct AppState {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .manage(player_window::PlayerWindow::default())
         .setup(|app| {
             let data = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data)?;
@@ -71,6 +73,9 @@ fn main() {
             commands::player_status,
             commands::player_action,
             commands::set_player_bounds,
+            player_window::set_player_popout,
+            player_window::set_player_on_top,
+            player_window::player_window_mode,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -104,6 +109,13 @@ fn shutdown(app: &tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         let worker = app.clone();
         let _ = tauri::async_runtime::spawn_blocking(move || {
+            if let Some(window) = worker.get_webview_window("main") {
+                // Save the browsing geometry on quit, not the temporary popout size.
+                let _ = window.set_fullscreen(false);
+                let _ = worker
+                    .state::<player_window::PlayerWindow>()
+                    .restore(&window);
+            }
             let state = worker.state::<AppState>();
             // VLC may need AppKit/Win32 callbacks while releasing its video output.
             let player = state.player.lock().ok().and_then(|mut p| p.take());

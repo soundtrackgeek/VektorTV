@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.7.0] - 2026-10-01
+
+### Added
+
+- Popout player mode on Windows and macOS: a compact video window with native dragging/resizing, playback controls and a Return to app action that restores the previous window geometry without restarting the stream.
+- A Keep on top toggle for desktop viewing, with a visible pressed state and native operating-system window stacking.
+
+### Changed
+
+- Keep fullscreen, Escape, playback errors and native video sizing working in the compact desktop layout.
+- Align desktop and native Apple versions at 0.7.0; increment the Apple build to 10. Native iOS/iPadOS/tvOS playback layouts remain unchanged because desktop window controls do not apply to those platforms.
+
 ## [0.6.1] - 2026-10-01
 
 ### Fixed

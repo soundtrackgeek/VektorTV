@@ -128,6 +128,10 @@ npm run dev
 
 Open `http://127.0.0.1:1437/?demo=1` for **illustrative interface data**. A browser preview cannot access the saved account or play IPTV streams. The native app uses real commands and service data.
 
+Select a channel, then choose **Pop out** to turn the desktop app into a compact player. Drag its native title bar to move it and drag an edge/corner to resize it (minimum 360 × 250). **Keep on top** pins the window above ordinary application windows; click it again to unpin. The highlighted pin indicates that it is enabled. **Return to app** or `Esc` restores the previous browsing window size and position while playback continues. Fullscreen remains available; `Esc` leaves fullscreen before leaving popout. Close quits the app, and **Stop playback** stops only the stream. Popout and pinning are session-only; quitting restores the browsing geometry for the next launch.
+
+Desktop popout uses the existing player window so the stream stays connected; channel browsing is available again through **Return to app**. iPhone/iPad and Apple TV retain their existing AVPlayer full-screen/touch/remote behavior. Keep on top follows the operating system's window rules; system dialogs and other full-screen spaces may take precedence. Browser demo mode previews the compact controls but cannot move, resize or pin a native window.
+
 Keyboard: `Ctrl K` on Windows or `Cmd K` on Mac searches, `Space` pauses/resumes outside form controls, `F` toggles fullscreen and `Esc` exits fullscreen. The native playback controls remain below the video surface so they stay clickable.
 
 ## Checks and packaging

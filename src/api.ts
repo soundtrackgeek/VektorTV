@@ -361,4 +361,12 @@ export const api = {
     visible: boolean;
   }) =>
     native ? invoke<void>("set_player_bounds", { bounds }) : Promise.resolve(),
+  popout: (enabled: boolean) =>
+    native ? invoke<void>("set_player_popout", { enabled }) : Promise.resolve(),
+  windowMode: () =>
+    native
+      ? invoke<{ popout: boolean; onTop: boolean }>("player_window_mode")
+      : Promise.resolve({ popout: false, onTop: false }),
+  onTop: (enabled: boolean) =>
+    native ? invoke<void>("set_player_on_top", { enabled }) : Promise.resolve(),
 };

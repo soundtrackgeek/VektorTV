@@ -83,6 +83,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [popout, setPopout] = useState(false);
+  const [onTop, setOnTop] = useState(false);
+  const [windowBusy, setWindowBusy] = useState(false);
+  const windowChanging = useRef(false);
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
   const [elapsed, setElapsed] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -345,14 +349,85 @@ export default function App() {
     }
   }, []);
   const toggleFullscreen = useCallback(async () => {
+    if (windowChanging.current) return;
+    windowChanging.current = true;
+    setWindowBusy(true);
     const next = !fullscreen;
     try {
       if (native) await getCurrentWindow().setFullscreen(next);
       setFullscreen(next);
     } catch (e) {
       setError(errorText(e));
+    } finally {
+      windowChanging.current = false;
+      setWindowBusy(false);
     }
   }, [fullscreen]);
+  const togglePopout = useCallback(async () => {
+    if (windowChanging.current || fullscreen) return;
+    windowChanging.current = true;
+    setWindowBusy(true);
+    try {
+      await api.popout(!popout);
+      setPopout(!popout);
+      setError(null);
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      windowChanging.current = false;
+      setWindowBusy(false);
+    }
+  }, [popout, fullscreen]);
+  const toggleOnTop = async () => {
+    if (windowChanging.current) return;
+    windowChanging.current = true;
+    setWindowBusy(true);
+    try {
+      await api.onTop(!onTop);
+      setOnTop(!onTop);
+      setError(null);
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      windowChanging.current = false;
+      setWindowBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (!native) return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    const window = getCurrentWindow();
+    void api
+      .windowMode()
+      .then((mode) => {
+        if (!disposed) {
+          setPopout(mode.popout);
+          setOnTop(mode.onTop);
+        }
+      })
+      .catch((e) => {
+        if (!disposed) setError(errorText(e));
+      });
+    // Native title-bar/OS fullscreen changes must also update the React layout.
+    const update = () => {
+      void window
+        .isFullscreen()
+        .then((value) => {
+          if (!disposed) setFullscreen(value);
+        })
+        .catch(() => {});
+    };
+    update();
+    void window.onResized(update).then((fn) => {
+      if (disposed) fn();
+      else unlisten = fn;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
   const favorite = async (channel: Channel) => {
     try {
       await api.favorite(channel.id, !channel.favorite);
@@ -370,8 +445,13 @@ export default function App() {
         void toggleFullscreen();
         return;
       }
+      if (event.key === "Escape" && popout) {
+        void togglePopout();
+        return;
+      }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        if (popout) return;
         if (view === "settings" || view === "countries") setView("live");
         window.setTimeout(() => {
           if (view === "guide")
@@ -400,6 +480,8 @@ export default function App() {
     return () => window.removeEventListener("keydown", key);
   }, [
     fullscreen,
+    popout,
+    togglePopout,
     toggleFullscreen,
     view,
     selected,
@@ -419,9 +501,12 @@ export default function App() {
       else searchRef.current?.focus();
     }, 0);
   };
+  const playerOnly = fullscreen || popout;
   return (
-    <div className={`app-shell ${fullscreen ? "is-fullscreen" : ""}`}>
-      {!fullscreen && (
+    <div
+      className={`app-shell ${fullscreen ? "is-fullscreen" : ""} ${popout ? "is-popout" : ""}`}
+    >
+      {!playerOnly && (
         <header className="app-header">
           <Brand />
           <nav className="main-tabs" aria-label="Main navigation">
@@ -475,14 +560,14 @@ export default function App() {
           </div>
         </header>
       )}
-      {!fullscreen && progress.active && (
+      {!playerOnly && progress.active && (
         <div className="sync-banner" role="status">
           <LoaderCircle size={16} className="spin" />
           <span>{progress.message}</span>
           <small>{elapsed}s</small>
         </div>
       )}
-      {!fullscreen && error && (
+      {error && (
         <div className="error-banner" role="alert">
           <AlertCircle size={16} />
           <span>{error}</span>
@@ -495,7 +580,7 @@ export default function App() {
           </button>
         </div>
       )}
-      {!fullscreen && !progress.active && progress.phase === "warning" && (
+      {!playerOnly && !progress.active && progress.phase === "warning" && (
         <div className="warning-banner" role="status">
           <AlertCircle size={16} />
           <span>{progress.message}</span>
@@ -511,7 +596,7 @@ export default function App() {
       <main
         className={`content ${view === "settings" ? "settings-content" : ""}`}
       >
-        {view !== "settings" && view !== "countries" && !fullscreen && (
+        {view !== "settings" && view !== "countries" && !playerOnly && (
           <ChannelBrowser
             channels={page.channels}
             groups={country?.groups ?? groups}
@@ -550,7 +635,7 @@ export default function App() {
             configured={!!info?.configured}
           />
         )}
-        {view === "countries" && !fullscreen ? (
+        {view === "countries" && !playerOnly ? (
           <CountryBrowser
             countries={countries}
             loading={!info}
@@ -571,7 +656,7 @@ export default function App() {
               setView("live");
             }}
           />
-        ) : view === "settings" && !fullscreen ? (
+        ) : view === "settings" && !playerOnly ? (
           <Settings
             info={info ? { ...info, progress } : null}
             onSaved={() => {
@@ -586,7 +671,7 @@ export default function App() {
               void refreshInfo();
             }}
           />
-        ) : view === "guide" && !fullscreen ? (
+        ) : view === "guide" && !playerOnly ? (
           <Guide
             key={`${debouncedSearch}|${group}|${countryCode ?? ""}`}
             total={page.total}
@@ -620,6 +705,15 @@ export default function App() {
               void toggleFullscreen();
             }}
             fullscreen={fullscreen}
+            popout={popout}
+            onTop={onTop}
+            windowBusy={windowBusy}
+            onPopout={() => {
+              void togglePopout();
+            }}
+            onToggleOnTop={() => {
+              void toggleOnTop();
+            }}
             now={now}
             onFavorite={() => {
               if (selected) void favorite(selected);
@@ -630,7 +724,7 @@ export default function App() {
           />
         )}
       </main>
-      {!fullscreen &&
+      {!playerOnly &&
         (view === "guide" || view === "settings" || view === "countries") &&
         selected &&
         status.channelId && (
