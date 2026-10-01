@@ -1,6 +1,6 @@
 use crate::{
     countries, models::normalized, Channel, ChannelPage, ChannelQuery, ChannelView, Country, Error,
-    Group, Programme, Result,
+    Group, Programme, ProgrammeMatch, ProgrammePage, ProgrammeQuery, Result,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 use std::path::Path;
@@ -26,6 +26,34 @@ impl Store {
             CREATE TABLE IF NOT EXISTS country_favourites (country_code TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS channel_sort (channel_id TEXT PRIMARY KEY,sort_name TEXT NOT NULL);
             PRAGMA user_version=2;")?;
+        connection.execute_batch("CREATE VIRTUAL TABLE IF NOT EXISTS programme_search USING fts5(title,description,category,content='programmes',content_rowid='rowid',tokenize='unicode61 remove_diacritics 2');
+            CREATE TRIGGER IF NOT EXISTS programme_search_insert AFTER INSERT ON programmes BEGIN
+                INSERT INTO programme_search(rowid,title,description,category) VALUES(new.rowid,new.title,new.description,new.category);
+            END;
+            CREATE TRIGGER IF NOT EXISTS programme_search_delete AFTER DELETE ON programmes BEGIN
+                INSERT INTO programme_search(programme_search,rowid,title,description,category) VALUES('delete',old.rowid,old.title,old.description,old.category);
+            END;
+            CREATE TRIGGER IF NOT EXISTS programme_search_update AFTER UPDATE ON programmes BEGIN
+                INSERT INTO programme_search(programme_search,rowid,title,description,category) VALUES('delete',old.rowid,old.title,old.description,old.category);
+                INSERT INTO programme_search(rowid,title,description,category) VALUES(new.rowid,new.title,new.description,new.category);
+            END;")?;
+        let indexed: bool = connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM metadata WHERE key='programme_search' AND value='1')",
+            [],
+            |r| r.get(0),
+        )?;
+        if !indexed {
+            let tx = connection.transaction()?;
+            tx.execute(
+                "INSERT INTO programme_search(programme_search) VALUES('rebuild')",
+                [],
+            )?;
+            tx.execute(
+                "INSERT OR REPLACE INTO metadata VALUES('programme_search','1')",
+                [],
+            )?;
+            tx.commit()?;
+        }
         // Backfill cached libraries once; no provider refresh is required.
         let mapped: bool = connection.query_row(
             "SELECT EXISTS(SELECT 1 FROM metadata WHERE key='country_mapping' AND value='1')",
@@ -310,6 +338,77 @@ impl Store {
             .collect::<std::result::Result<_, _>>()?;
         Ok(rows)
     }
+    /// Search the entire imported guide, independently of channel-list pagination.
+    pub fn search_programmes(&self, query: &ProgrammeQuery) -> Result<ProgrammePage> {
+        // Quote user tokens so FTS operators and punctuation cannot become query syntax.
+        let search = query
+            .search
+            .split_whitespace()
+            .map(|word| format!("\"{}\"*", word.replace('"', "\"\"")))
+            .collect::<Vec<_>>()
+            .join(" AND ");
+        let filter = " FROM programmes p JOIN channels c ON c.id=p.channel_id
+            JOIN country_groups g ON g.group_name=c.group_name
+            LEFT JOIN favourites f ON f.channel_id=c.id
+            WHERE (?1='' OR p.rowid IN (SELECT rowid FROM programme_search WHERE programme_search MATCH ?1))
+            AND (?2 IS NULL OR g.country_code=?2) AND (?3 IS NULL OR c.group_name=?3)
+            AND (?4=0 OR f.channel_id IS NOT NULL)
+            AND (?5 IS NULL OR p.end>?5) AND (?6 IS NULL OR p.start<?6)";
+        let args = params![
+            search,
+            query.country,
+            query.group,
+            query.favorites_only,
+            query.from,
+            query.until
+        ];
+        let total = self
+            .connection
+            .query_row(&format!("SELECT COUNT(*){filter}"), args, |r| r.get(0))?;
+        let mut statement = self.connection.prepare(&format!(
+            "SELECT c.id,c.name,c.group_name,c.logo,c.epg_id,c.stream_id,f.channel_id IS NOT NULL,
+             p.channel_id,p.title,p.description,p.start,p.end,p.category {filter}
+             ORDER BY p.start,c.search_name,c.id,p.end,p.title LIMIT ?7 OFFSET ?8"
+        ))?;
+        let results = statement
+            .query_map(
+                params![
+                    search,
+                    query.country,
+                    query.group,
+                    query.favorites_only,
+                    query.from,
+                    query.until,
+                    query.limit.unwrap_or(100).clamp(1, 200),
+                    query.offset
+                ],
+                |r| {
+                    Ok(ProgrammeMatch {
+                        channel: ChannelView {
+                            channel: read_channel(r)?,
+                            favorite: r.get(6)?,
+                            last_watched: None,
+                            now: None,
+                            next: None,
+                        },
+                        programme: Programme {
+                            channel_id: r.get(7)?,
+                            title: r.get(8)?,
+                            description: r.get(9)?,
+                            start: r.get(10)?,
+                            end: r.get(11)?,
+                            category: r.get(12)?,
+                        },
+                    })
+                },
+            )?
+            .collect::<std::result::Result<_, _>>()?;
+        Ok(ProgrammePage {
+            results,
+            total,
+            offset: query.offset,
+        })
+    }
     fn current_programme(&self, id: &str, now: i64) -> Result<Option<Programme>> {
         Ok(self.connection.query_row("SELECT channel_id,title,description,start,end,category FROM programmes WHERE channel_id=?1 AND start<=?2 AND end>?2 ORDER BY start DESC LIMIT 1", params![id,now], read_programme).optional()?)
     }
@@ -399,6 +498,184 @@ mod tests {
             },
         ]
     }
+    #[test]
+    fn programme_index_backfills_cached_guides_and_survives_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("library.db");
+        {
+            let mut store = Store::open(&path).unwrap();
+            store.replace_channels(&channels(), 0).unwrap();
+            store
+                .replace_programmes(
+                    &[Programme {
+                        channel_id: "a".into(),
+                        title: "Café News".into(),
+                        description: "".into(),
+                        category: "".into(),
+                        start: 100,
+                        end: 200,
+                    }],
+                    0,
+                )
+                .unwrap();
+            // Simulate the 0.5 cache before the search index existed.
+            store.connection.execute_batch("DROP TRIGGER programme_search_insert; DROP TRIGGER programme_search_update; DROP TRIGGER programme_search_delete; DROP TABLE programme_search; DELETE FROM metadata WHERE key='programme_search';").unwrap();
+        }
+        for _ in 0..2 {
+            let store = Store::open(&path).unwrap();
+            assert_eq!(
+                store
+                    .search_programmes(&ProgrammeQuery {
+                        search: "CAFE new".into(),
+                        ..Default::default()
+                    })
+                    .unwrap()
+                    .total,
+                1
+            );
+        }
+    }
+
+    #[test]
+    fn programme_search_spans_catalog_and_filters_before_paging() {
+        let mut store = Store::open(":memory:").unwrap();
+        let catalog: Vec<_> = (0..250)
+            .map(|i| Channel {
+                id: format!("c{i:03}"),
+                name: format!("Channel {i:03}"),
+                group: if i < 125 { "NO| Norway" } else { "SE| Sweden" }.into(),
+                logo: None,
+                epg_id: i.to_string(),
+                stream_id: Some(i),
+            })
+            .collect();
+        store.replace_channels(&catalog, 0).unwrap();
+        let events: Vec<_> = catalog
+            .iter()
+            .enumerate()
+            .map(|(i, c)| Programme {
+                channel_id: c.id.clone(),
+                title: "ÅLESUND 100%_live".into(),
+                description: format!("Unique description {i:03}"),
+                category: "Sports".into(),
+                start: 100,
+                end: 200,
+            })
+            .collect();
+        store.replace_programmes(&events, 0).unwrap();
+        let base = ProgrammeQuery {
+            search: "alesund".into(),
+            limit: Some(100),
+            ..Default::default()
+        };
+        let first = store.search_programmes(&base).unwrap();
+        let third = store
+            .search_programmes(&ProgrammeQuery {
+                offset: 200,
+                ..base.clone()
+            })
+            .unwrap();
+        assert_eq!(first.total, 250);
+        assert_eq!(first.results.len(), 100);
+        assert_eq!(third.results.len(), 50);
+        assert_eq!(third.results[0].channel.channel.id, "c200");
+        for term in ["100%_", "unique description 249", "SPORTS"] {
+            assert!(!store
+                .search_programmes(&ProgrammeQuery {
+                    search: term.into(),
+                    ..Default::default()
+                })
+                .unwrap()
+                .results
+                .is_empty());
+        }
+        store.favorite("c249", true).unwrap();
+        let filtered = ProgrammeQuery {
+            country: Some("se".into()),
+            group: Some("SE| Sweden".into()),
+            favorites_only: true,
+            from: Some(150),
+            until: Some(151),
+            ..base.clone()
+        };
+        let result = store.search_programmes(&filtered).unwrap();
+        assert_eq!(result.total, 1);
+        assert_eq!(result.results[0].channel.channel.id, "c249");
+        assert!(result.results[0].channel.favorite);
+        assert_eq!(
+            store
+                .search_programmes(&ProgrammeQuery {
+                    from: Some(200),
+                    ..filtered.clone()
+                })
+                .unwrap()
+                .total,
+            0
+        );
+        assert_eq!(
+            store
+                .search_programmes(&ProgrammeQuery {
+                    until: Some(100),
+                    ..filtered.clone()
+                })
+                .unwrap()
+                .total,
+            0
+        );
+        assert_eq!(
+            store
+                .search_programmes(&ProgrammeQuery {
+                    country: Some("no".into()),
+                    ..filtered
+                })
+                .unwrap()
+                .total,
+            0
+        );
+        for term in ["\"", "OR", "*", "title:news", "%"] {
+            store
+                .search_programmes(&ProgrammeQuery {
+                    search: term.into(),
+                    ..Default::default()
+                })
+                .unwrap();
+        }
+        let mut edited = events[0].clone();
+        edited.title = "Updated title".into();
+        edited.description = "Replacement description".into();
+        store.replace_programmes(&[edited.clone()], 0).unwrap();
+        assert_eq!(store.search_programmes(&base).unwrap().total, 0);
+        assert_eq!(
+            store
+                .search_programmes(&ProgrammeQuery {
+                    search: "updat titl".into(),
+                    ..Default::default()
+                })
+                .unwrap()
+                .total,
+            1
+        );
+        edited.description = "Merged content".into();
+        store.merge_programmes(&[edited]).unwrap();
+        assert_eq!(
+            store
+                .search_programmes(&ProgrammeQuery {
+                    search: "merged".into(),
+                    ..Default::default()
+                })
+                .unwrap()
+                .total,
+            1
+        );
+        store.replace_programmes(&events, 0).unwrap();
+        store.replace_channels(&catalog[..1], 0).unwrap();
+        assert_eq!(
+            store.search_programmes(&base).unwrap().total,
+            1,
+            "Orphaned guide data must not return channels removed from the library"
+        );
+    }
+
     #[test]
     fn restart_favourites_history_unicode_search_and_literal_wildcards() {
         let temp = tempfile::tempdir().unwrap();

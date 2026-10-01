@@ -10,7 +10,7 @@ use std::{
 };
 use vektortv_core::{
     provider::{self, Connection},
-    Channel, ChannelQuery, Error, Result, Store,
+    Channel, ChannelQuery, Error, ProgrammeQuery, Result, Store,
 };
 
 struct State {
@@ -27,20 +27,44 @@ pub struct AppleCore {
 #[derive(Deserialize)]
 #[serde(tag = "command", rename_all = "camelCase")]
 enum Request {
-    Restore { connection: Connection },
+    Restore {
+        connection: Connection,
+    },
     Disconnect,
     Status,
-    Refresh { connection: Connection },
-    List { query: ChannelQuery },
+    Refresh {
+        connection: Connection,
+    },
+    List {
+        query: ChannelQuery,
+    },
     Groups,
     Countries,
-    FavoriteCountry { id: String, favorite: bool },
+    FavoriteCountry {
+        id: String,
+        favorite: bool,
+    },
     Guide,
-    ShortGuide { id: String },
-    Schedule { id: String },
-    Stream { id: String },
-    Favorite { id: String, favorite: bool },
-    Watched { id: String },
+    ShortGuide {
+        id: String,
+    },
+    Schedule {
+        id: String,
+    },
+    SearchProgrammes {
+        #[serde(rename = "programmeQuery")]
+        programme_query: ProgrammeQuery,
+    },
+    Stream {
+        id: String,
+    },
+    Favorite {
+        id: String,
+        favorite: bool,
+    },
+    Watched {
+        id: String,
+    },
 }
 
 impl AppleCore {
@@ -207,6 +231,16 @@ impl AppleCore {
                         .unwrap_or(Value::Null),
                 )
             }
+            Request::SearchProgrammes { programme_query } => {
+                let state = self.state()?;
+                if !Self::ready(&state)? {
+                    return Ok(json!({"results":[], "total":0, "offset":0}));
+                }
+                Ok(
+                    serde_json::to_value(state.store.search_programmes(&programme_query)?)
+                        .unwrap_or(Value::Null),
+                )
+            }
             Request::Stream { id } => {
                 let (connection, channel, revision) = self.channel_context(&id)?;
                 if connection.kind == "xtream" {
@@ -320,6 +354,10 @@ mod tests {
             for (input, expected) in [
                 (r#"{"command":"status"}"#, "value"),
                 (r#"{"command":"list","query":{}}"#, "value"),
+                (
+                    r#"{"command":"searchProgrammes","programmeQuery":{"search":"news"}}"#,
+                    "value",
+                ),
                 ("secret invalid payload", "error"),
             ] {
                 let input = CString::new(input).unwrap();

@@ -74,6 +74,35 @@ pub struct ChannelQuery {
     pub limit: Option<usize>,
 }
 
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProgrammeQuery {
+    #[serde(default)]
+    pub search: String,
+    pub country: Option<String>,
+    pub group: Option<String>,
+    #[serde(default)]
+    pub favorites_only: bool,
+    pub from: Option<i64>,
+    pub until: Option<i64>,
+    #[serde(default)]
+    pub offset: usize,
+    pub limit: Option<usize>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ProgrammeMatch {
+    pub channel: ChannelView,
+    pub programme: Programme,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ProgrammePage {
+    pub results: Vec<ProgrammeMatch>,
+    pub total: usize,
+    pub offset: usize,
+}
+
 pub fn normalized(value: &str) -> String {
     value
         .split_whitespace()
