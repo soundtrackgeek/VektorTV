@@ -1,6 +1,17 @@
 # Native Apple builds and TestFlight
 
-Project: `apps/apple/VektorTV.xcodeproj`. Shared schemes: **VektorTV-iOS** and **VektorTV-tvOS**. Both use bundle identifier `com.soundtrackgeek.vektortv`, Apple team `3L5769JKCM`, version `0.3.0` and build `4`. [VektorTV in App Store Connect](https://appstoreconnect.apple.com/apps/6817723723) supports both platforms. Rust `1.98.1` provides ARM64 iOS/tvOS device and simulator targets; the core is statically linked.
+Project: `apps/apple/VektorTV.xcodeproj`. Shared schemes: **VektorTV-iOS** and **VektorTV-tvOS**. Both use bundle identifier `com.soundtrackgeek.vektortv`, Apple team `3L5769JKCM`, version `0.4.0` and build `5`. [VektorTV in App Store Connect](https://appstoreconnect.apple.com/apps/6817723723) supports both platforms. Rust `1.98.1` provides ARM64 iOS/tvOS device and simulator targets; the core is statically linked.
+
+**0.4.0 (5) is available in VektorTV Internal on both platforms.** Released Xcode 26.6 (17F113) built both Release archives on 2026-10-01. Automatic distribution exports/uploads succeeded; Apple completed processing and the internal group's Builds page shows **Testing** for both platforms. This release keeps Apple versioning aligned with the new Tauri Windows/macOS interface; native Apple UI behavior is unchanged from 0.3.0.
+
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.4.0 (5) | 2026-10-01 19:37:48 | Testing — VektorTV Internal | [iOS build 5](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/300b9bab-bb2e-4633-b7a5-02467bd961ff) |
+| tvOS | 0.4.0 (5) | 2026-10-01 19:40:25 | Testing — VektorTV Internal | [tvOS build 5](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/8cabbd56-aa65-4e1a-99af-ac5947189aca) |
+
+Archives: `apps/apple/build/0.4.0-5/`. Local logs: `/tmp/vektortv-040-archive-ios.log`, `/tmp/vektortv-040-archive-tvos.log`, `/tmp/vektortv-040-upload-ios.log`, `/tmp/vektortv-040-upload-tvos.log`. Both archives and exports report success. Internal availability was visibly verified at approximately 19:46 Europe/Oslo.
+
+### Previous releases
 
 **0.3.0 (4) is available in VektorTV Internal on both platforms.** On 2026-10-01, released Xcode 26.6 (17F113) built both Release archives. Automatic distribution exports/uploads succeeded, Apple completed processing, and the internal group's Builds page shows **Testing** for both iOS and tvOS.
 

@@ -41,7 +41,9 @@ void vektor_surface_bounds(void *pointer, double x, double y, double width, doub
     dispatch_async(dispatch_get_main_queue(), ^{
         NSView *parent = view.superview;
         CGFloat scale = parent.window.backingScaleFactor ?: 1;
-        CGFloat top = y / scale;
+        // WKWebView lays its page below the window's safe area (including the
+        // macOS title bar). In full screen this inset automatically becomes zero.
+        CGFloat top = y / scale + parent.safeAreaInsets.top;
         CGFloat h = height / scale;
         CGFloat originY = parent.isFlipped ? top : parent.bounds.size.height - top - h;
         view.frame = NSMakeRect(x / scale, originY, MAX(1, width / scale), MAX(1, h));
