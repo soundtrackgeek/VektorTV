@@ -7,6 +7,10 @@ final class LibraryStore {
     var hasAccount = false
     var channels: [Channel] = []
     var groups: [ChannelGroup] = []
+    var countries: [Country] = []
+    var countryCode: String?
+    var country: Country? { countries.first { $0.code == countryCode } }
+    var availableGroups: [ChannelGroup] { country?.groups ?? groups }
     var total = 0
     var catalogCount = 0
     var search = ""
@@ -67,6 +71,7 @@ final class LibraryStore {
             accountGeneration += 1
             catalogCount = count
             group = nil
+            countryCode = nil
             try CredentialStore.save(candidate)
             await reload()
             Task { await self.refreshGuide() }
@@ -94,9 +99,10 @@ final class LibraryStore {
         isLoading = true
         defer { if generation == queryGeneration { isLoading = false } }
         do {
-            let query = ChannelQuery(search: search, group: group, favoritesOnly: section == .favorites, historyOnly: section == .history, offset: more ? channels.count : 0)
+            let query = ChannelQuery(search: search, group: group, country: countryCode, alphabetical: countryCode != nil && section != .history, favoritesOnly: section == .favorites, historyOnly: section == .history, offset: more ? channels.count : 0)
             let page: ChannelPage = try await call(CoreRequest(command: "list", query: query))
             let fetchedGroups: [ChannelGroup] = try await call(CoreRequest(command: "groups"))
+            let fetchedCountries: [Country] = try await call(CoreRequest(command: "countries"))
             guard generation == queryGeneration, account == accountGeneration, !Task.isCancelled else { return }
             if more {
                 let loaded = Set(channels.map(\.id))
@@ -104,6 +110,7 @@ final class LibraryStore {
             } else { channels = page.channels }
             total = page.total
             groups = fetchedGroups
+            countries = fetchedCountries
         } catch { if generation == queryGeneration { message = error.localizedDescription } }
     }
     func updateStatus() async {
@@ -118,6 +125,26 @@ final class LibraryStore {
             return true
         } catch { message = error.localizedDescription; return false }
     }
+    func toggleCountryFavorite(_ country: Country) async {
+        let account = accountGeneration
+        do {
+            let _: Bool = try await call(CoreRequest(command: "favoriteCountry", id: country.code, favorite: !country.favorite))
+            let updated: [Country] = try await call(CoreRequest(command: "countries"))
+            if account == accountGeneration { countries = updated }
+        } catch { message = error.localizedDescription }
+    }
+    func openCountry(_ country: Country, group: String?) {
+        countryCode = country.code
+        self.group = group
+        search = ""
+        section = .live
+        channels = []
+    }
+    func clearCountry() {
+        countryCode = nil
+        group = nil
+        search = ""
+    }
     func forget() async throws {
         try CredentialStore.delete()
         let _: Bool = try await call(CoreRequest(command: "disconnect"))
@@ -128,6 +155,9 @@ final class LibraryStore {
         connection = ProviderConnection()
         channels = []
         groups = []
+        countries = []
+        countryCode = nil
+        group = nil
         catalogCount = 0
         total = 0
         message = nil

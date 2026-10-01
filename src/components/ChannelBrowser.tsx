@@ -10,7 +10,8 @@ import {
   Volume2,
 } from "lucide-react";
 import { useRef } from "react";
-import type { Channel, Group, View } from "../types";
+import { CountryFlag } from "./CountryBrowser";
+import type { Channel, Country, Group, View } from "../types";
 
 export function ChannelLogo({
   channel,
@@ -37,6 +38,9 @@ export function ChannelLogo({
   );
 }
 interface Props {
+  country?: Country;
+  onCountries: () => void;
+  onClearCountry: () => void;
   channels: Channel[];
   groups: Group[];
   group: string;
@@ -62,8 +66,29 @@ export default function ChannelBrowser(p: Props) {
   const resetScroll = () => listRef.current?.scrollTo(0, 0);
   return (
     <aside className="channel-browser" aria-label="Channel browser">
+      {p.country && (
+        <div className="country-scope">
+          <button onClick={p.onCountries} aria-label="Back to countries">
+            <CountryFlag code={p.country.code} />
+            <span>{p.country.name}</span>
+          </button>
+          <button
+            className="icon-button"
+            onClick={p.onClearCountry}
+            aria-label="Clear country filter"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
       <div className="browser-heading">
-        <h2>Your channels</h2>
+        <h2>
+          {p.country
+            ? p.group
+              ? "Country channels"
+              : "All channels A–Z"
+            : "Your channels"}
+        </h2>
         <button
           className="icon-button"
           aria-label="Refresh library"
@@ -143,7 +168,9 @@ export default function ChannelBrowser(p: Props) {
             resetScroll();
           }}
         >
-          <option value="">All groups</option>
+          <option value="">
+            {p.country ? "All channels A–Z" : "All groups"}
+          </option>
           {p.groups.map((g) => (
             <option key={g.name} value={g.name}>
               {g.name} ({g.count})

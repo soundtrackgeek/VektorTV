@@ -4,6 +4,7 @@ import type {
   Channel,
   ChannelPage,
   Connection,
+  Country,
   Group,
   PlayerStatus,
   Programme,
@@ -47,7 +48,18 @@ const titles = [
 const channels: Channel[] = names.map((name, i) => ({
   id: `demo-${i}`,
   name,
-  group: i < 6 ? "Nordic" : i < 8 ? "News" : i < 10 ? "Sports" : "Documentary",
+  group:
+    i < 2
+      ? "NO| Norway"
+      : i < 4
+        ? "NO| Norway Entertainment"
+        : i < 6
+          ? "SE| Sweden"
+          : i < 8
+            ? "UK| News"
+            : i < 10
+              ? "International Sports"
+              : "Documentary",
   logo: null,
   epgId: name,
   streamId: i,
@@ -71,6 +83,43 @@ const channels: Channel[] = names.map((name, i) => ({
     category: "",
   },
 }));
+const demoCountryDefinitions = [
+  {
+    code: "no",
+    name: "Norway",
+    groups: ["NO| Norway", "NO| Norway Entertainment"],
+  },
+  { code: "se", name: "Sweden", groups: ["SE| Sweden"] },
+  { code: "gb", name: "United Kingdom", groups: ["UK| News"] },
+  {
+    code: "zz",
+    name: "International & unassigned",
+    groups: ["International Sports", "Documentary"],
+  },
+];
+const previewCountryFavorites = new Set<string>(
+  JSON.parse(
+    localStorage.getItem("vektortv.preview.countryFavorites") || "[]",
+  ) as string[],
+);
+function previewCountries(): Country[] {
+  return demoCountryDefinitions
+    .map((c) => ({
+      ...c,
+      groups: c.groups.map((name) => ({
+        name,
+        count: channels.filter((ch) => ch.group === name).length,
+      })),
+      count: channels.filter((ch) => c.groups.includes(ch.group)).length,
+      favorite: previewCountryFavorites.has(c.code),
+    }))
+    .sort(
+      (a, b) =>
+        Number(b.favorite) - Number(a.favorite) ||
+        Number(a.code === "zz") - Number(b.code === "zz") ||
+        a.name.localeCompare(b.name),
+    );
+}
 let demoPlayer: PlayerStatus = {
   state: "idle",
   channelId: null,
@@ -92,7 +141,7 @@ const previewInfo: AppInfo = {
   playerAvailable: true,
   playerError: null,
   progress: { phase: "", active: false, message: "" },
-  version: "0.4.0",
+  version: "0.5.0",
   platform: "preview",
   credentialStorage: "the operating system credential store",
 };
@@ -121,12 +170,27 @@ export const api = {
       ? invoke<Group[]>("list_groups")
       : Promise.resolve(
           demo
-            ? ["Nordic", "News", "Sports", "Documentary"].map((name) => ({
+            ? [...new Set(channels.map((c) => c.group))].map((name) => ({
                 name,
                 count: channels.filter((c) => c.group === name).length,
               }))
             : [],
         ),
+  countries: () =>
+    native
+      ? invoke<Country[]>("list_countries")
+      : Promise.resolve(demo ? previewCountries() : []),
+  favoriteCountry: async (code: string, favorite: boolean) => {
+    if (native) return invoke<void>("set_country_favorite", { code, favorite });
+    if (demo) {
+      if (favorite) previewCountryFavorites.add(code);
+      else previewCountryFavorites.delete(code);
+      localStorage.setItem(
+        "vektortv.preview.countryFavorites",
+        JSON.stringify([...previewCountryFavorites]),
+      );
+    }
+  },
   list: (query: Query) => {
     if (native) return invoke<ChannelPage>("list_channels", { query });
     const result = demo
@@ -136,10 +200,18 @@ export const api = {
               .toLocaleLowerCase()
               .includes(query.search.toLocaleLowerCase()) &&
             (!query.group || c.group === query.group) &&
+            (!query.country ||
+              demoCountryDefinitions
+                .find((country) => country.code === query.country)
+                ?.groups.includes(c.group)) &&
             (!query.favoritesOnly || c.favorite) &&
             (!query.historyOnly || c.lastWatched),
         )
       : [];
+    if (query.alphabetical)
+      result.sort(
+        (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+      );
     return Promise.resolve({
       channels: result.slice(query.offset, query.offset + query.limit),
       total: result.length,

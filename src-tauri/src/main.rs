@@ -58,6 +58,8 @@ fn main() {
             commands::app_info,
             commands::list_channels,
             commands::list_groups,
+            commands::list_countries,
+            commands::set_country_favorite,
             commands::get_schedule,
             commands::set_favorite,
             commands::save_connection,

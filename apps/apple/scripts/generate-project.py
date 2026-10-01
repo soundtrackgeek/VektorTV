@@ -30,9 +30,11 @@ def configs(name, settings):
 sources = [add(str(path), "PBXFileReference", lastKnownFileType="sourcecode.swift", path=str(path.relative_to(root)), sourceTree="SOURCE_ROOT") for path in sorted((root / "Shared").glob("*.swift"))]
 test_source = add("UITestSource", "PBXFileReference", lastKnownFileType="sourcecode.swift", path="UITests/ViewingRoomUITests.swift", sourceTree="SOURCE_ROOT")
 privacy = add("Privacy", "PBXFileReference", lastKnownFileType="text.xml", path="Resources/PrivacyInfo.xcprivacy", sourceTree="SOURCE_ROOT")
+flags = add("Flags", "PBXFileReference", lastKnownFileType="folder.assetcatalog", path="Resources/Flags.xcassets", sourceTree="SOURCE_ROOT")
+country_license = add("CountryLicense", "PBXFileReference", lastKnownFileType="text", path="Resources/CountryAssets-LICENSE.txt", sourceTree="SOURCE_ROOT")
 products = []
 targets = []
-resource_refs = [privacy]
+resource_refs = [privacy, flags, country_license]
 for name, sdk, family, deployment, assets in [
     ("VektorTV-iOS", "iphoneos", "1,2", "IPHONEOS_DEPLOYMENT_TARGET", "iOS"),
     ("VektorTV-tvOS", "appletvos", "3", "TVOS_DEPLOYMENT_TARGET", "tvOS"),
@@ -42,14 +44,14 @@ for name, sdk, family, deployment, assets in [
     product = add(name + "Product", "PBXFileReference", explicitFileType="wrapper.application", path=f"{name}.app", sourceTree="BUILT_PRODUCTS_DIR")
     products.append(product)
     source_phase = add(name + "Sources", "PBXSourcesBuildPhase", buildActionMask=2147483647, files=[add(name + source, "PBXBuildFile", fileRef=source) for source in sources], runOnlyForDeploymentPostprocessing=0)
-    resource_phase = add(name + "Resources", "PBXResourcesBuildPhase", buildActionMask=2147483647, files=[add(name + ref, "PBXBuildFile", fileRef=ref) for ref in [asset, privacy]], runOnlyForDeploymentPostprocessing=0)
+    resource_phase = add(name + "Resources", "PBXResourcesBuildPhase", buildActionMask=2147483647, files=[add(name + ref, "PBXBuildFile", fileRef=ref) for ref in [asset, privacy, flags, country_license]], runOnlyForDeploymentPostprocessing=0)
     framework_phase = add(name + "Frameworks", "PBXFrameworksBuildPhase", buildActionMask=2147483647, files=[], runOnlyForDeploymentPostprocessing=0)
     rust_phase = add(name + "Rust", "PBXShellScriptBuildPhase", buildActionMask=2147483647, files=[], inputPaths=[], outputPaths=["$(BUILT_PRODUCTS_DIR)/libvektortv_apple.a"], runOnlyForDeploymentPostprocessing=0, shellPath="/bin/bash", shellScript='"$SRCROOT/scripts/build-rust.sh"', name="Build shared Rust core", alwaysOutOfDate=1)
     settings = dict(
         PRODUCT_NAME="$(TARGET_NAME)", PRODUCT_BUNDLE_IDENTIFIER="com.soundtrackgeek.vektortv",
         DEVELOPMENT_TEAM="3L5769JKCM", CODE_SIGN_STYLE="Automatic", SDKROOT=sdk,
         SUPPORTED_PLATFORMS="iphoneos iphonesimulator" if sdk == "iphoneos" else "appletvos appletvsimulator",
-        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.4.0", CURRENT_PROJECT_VERSION="5",
+        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.5.0", CURRENT_PROJECT_VERSION="6",
         INFOPLIST_FILE=f"Resources/{assets}/Info.plist", SWIFT_VERSION="5.0",
         SWIFT_STRICT_CONCURRENCY="complete", SWIFT_OBJC_BRIDGING_HEADER="Bridge/BridgingHeader.h",
         ENABLE_USER_SCRIPT_SANDBOXING="NO", ENABLE_BITCODE="NO", GENERATE_INFOPLIST_FILE="NO",

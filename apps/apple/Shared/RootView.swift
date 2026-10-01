@@ -3,6 +3,7 @@ import SwiftUI
 private enum WorkspaceTab: String, CaseIterable {
     case watch = "Watch"
     case guide = "TV Guide"
+    case countries = "Countries"
 }
 
 struct RootView: View {
@@ -15,7 +16,7 @@ struct RootView: View {
     @State private var guideChannel: Channel?
 
     private var queryKey: String {
-        "\(library.search)|\(library.group ?? "")|\(library.section.rawValue)|\(library.hasAccount)"
+        "\(library.search)|\(library.group ?? "")|\(library.section.rawValue)|\(library.countryCode ?? "")|\(library.hasAccount)"
     }
 
     var body: some View {
@@ -68,7 +69,12 @@ struct RootView: View {
                 if let message = library.guideMessage {
                     StatusBanner(message: "Guide: \(message)") { library.guideMessage = nil }
                 }
-                if wide {
+                if tab == .countries {
+                    CountryBrowser(library: library) { country, group in
+                        library.openCountry(country, group: group)
+                        tab = .watch
+                    }
+                } else if wide {
                     GeometryReader { geometry in
                         HStack(spacing: 0) {
                             channelBrowser(wide: true)
@@ -101,7 +107,7 @@ struct RootView: View {
                 } else {
                     channelBrowser(wide: false)
                 }
-                if tab == .guide, playback.channel != nil {
+                if tab != .watch, playback.channel != nil {
                     NowPlayingBar(playback: playback) { tab = .watch }
                 }
             }
@@ -113,6 +119,7 @@ struct RootView: View {
     private func channelBrowser(wide: Bool) -> some View {
         ChannelBrowser(library: library, playback: playback, guide: tab == .guide,
             wide: wide, queryKey: queryKey,
+            showCountries: { tab = .countries },
             selectedGuideID: guideChannel?.id,
             schedule: { channel in
                 if wide && tab == .guide { guideChannel = channel }
@@ -148,13 +155,13 @@ struct RootView: View {
     }
 
     private var navigationTabs: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 4) {
             ForEach(WorkspaceTab.allCases, id: \.self) { item in
                 Button { tab = item } label: {
                     Text(item.rawValue)
                         .font(Theme.controlFont)
                         .foregroundStyle(tab == item ? Theme.text : Theme.muted)
-                        .padding(.horizontal, 16).padding(.vertical, 12)
+                        .padding(.horizontal, 10).padding(.vertical, 12)
                         .overlay(alignment: .bottom) {
                             Capsule().fill(tab == item ? Theme.accent : .clear).frame(height: 3)
                                 .padding(.horizontal, 16)

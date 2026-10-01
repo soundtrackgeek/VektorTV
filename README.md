@@ -2,12 +2,13 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI and AVKit/AVPlayer. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.4.0
+## Features in 0.5.0
 
 The Tauri desktop client includes:
 
 - Xtream account login or an HTTP M3U/M3U Plus playlist, with optional XMLTV guide.
 - Embedded VLC playback, including MPEG-TS and HLS, with pause/resume, stop, volume and fullscreen.
+- A dedicated Countries section with bundled SVG flags, country tiles, favorite countries pinned first, country groups and an **All channels A–Z** action on every platform.
 - Search and group filtering, paginated channel browsing, persistent favorites and viewing history.
 - Now/next programmes, upcoming schedules and a three-hour EPG grid. All programme times display in the computer's local time.
 - SQLite metadata cache; successful channel imports become available while the guide continues loading. A failed import retains the previous snapshot.
@@ -17,11 +18,21 @@ The Tauri desktop client includes:
 - Window size/position, selected section and channel group survive restart. Playback starts only when a channel is chosen.
 - Playback stop, switching and shutdown run away from the native UI thread so VLC can finish native video cleanup without freezing the window.
 
-The Cinema Lounge design is shared across desktop and native Apple: Watch/TV Guide navigation, a restrained charcoal/teal palette, real channel identities, a 16:9 viewing surface and programme details. Desktop keeps searchable groups, paginated lists, keyboard shortcuts and playback controls outside the native video surface.
+The Cinema Lounge design is shared across desktop and native Apple: Watch/TV Guide/Countries navigation, a restrained charcoal/teal palette, real channel identities, a 16:9 viewing surface and programme details. Desktop keeps searchable groups, paginated lists, keyboard shortcuts and playback controls outside the native video surface.
 
 The native Apple apps add HLS live playback, channel search/group filters, favorites/history, now/next and channel schedules. The Cinema Lounge interface gives Apple TV and wider iPad windows a channel sidebar beside a 16:9 inline player and programme details; compact iPhone/iPad windows stack the player with the channel list. Channel names and logos remain visible, with a white remote-focus outline separate from the teal playing-channel marker. Accounts are saved in Keychain. Apple TV metadata lives in its purgeable cache; favorites/history survive ordinary restarts but tvOS may reclaim that cache. A provider must supply streams/codecs AVPlayer supports; desktop VLC supports additional formats.
 
 The app supplies no channels or subscription. Use your own authorized service. Movies/VOD, series, recording, catch-up, multiple providers and cross-device sync are future work.
+
+## Browse by country
+
+Open **Countries** on any app. Each box shows its flag, name, group count and channel count. Use its star to pin or unpin it in **Favorite countries** at the top. Country favorites are separate from channel favorites, saved on the device and retained across refreshes and restarts. Apple TV provides separate focusable country and star buttons; touch and desktop provide the same actions.
+
+Select a country to see its provider groups, or choose **All channels A–Z** to browse all of that country's channels in case/accent-insensitive alphabetical order. Filtering and sorting happen before pagination, across the entire country. Channel search, favorites, history and playback remain available; the country label returns to Countries, and **Clear country filter** returns to the whole library.
+
+Country assignment uses provider **group names**, with explicit country names and common spelling aliases taking priority over leading ISO country codes (including `UK`). For example, `AL| ALBANIA SPORTS` belongs to Albania, `AFR| CABO VERDE` to Cape Verde, and `AR| ALGERIA` to Algeria. Regional, mixed-country and unrecognized groups remain available under **International & unassigned** with a globe symbol. Ambiguous provider prefixes such as `AR|`, `NA|` and `MU|` require a country name, so broad Arabic, North American and music groups do not receive an incorrect national flag. Country inference cannot identify a country that the provider never names; the original group browser remains available.
+
+All country detection, favorite persistence and channel ordering use the same Rust core. Desktop loads local SVG files; Apple compiles the same SVGs into vector image assets. No network flag service or emoji font is used. Cached libraries are upgraded automatically. Country favorites are local, with the same tvOS cache-reclamation limitation as channel favorites. Asset sources and licenses are in [third-party/README.md](third-party/README.md).
 
 ## Run the native Apple apps
 

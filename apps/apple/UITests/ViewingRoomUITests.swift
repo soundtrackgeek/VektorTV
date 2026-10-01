@@ -93,6 +93,57 @@ final class ViewingRoomUITests: XCTestCase {
         capture("Channel groups")
     }
 
+    func testCountriesFavoritesGroupsAndAlphabeticalChannels() {
+        openNorway()
+        let wasFavorite = app.buttons["Unfavorite country Norway"].exists
+        activate(app.buttons[wasFavorite ? "Unfavorite country Norway" : "Favorite country Norway"])
+        XCTAssertTrue(app.buttons[wasFavorite ? "Favorite country Norway" : "Unfavorite country Norway"].waitForExistence(timeout: 10))
+        capture("Country flag and favorite")
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Your channels"].waitForExistence(timeout: 15))
+        openNorway()
+        XCTAssertTrue(app.buttons[wasFavorite ? "Favorite country Norway" : "Unfavorite country Norway"].exists, "Country favorite must survive restart")
+        activate(app.buttons["Explore Norway"])
+        XCTAssertTrue(app.buttons["All channels A–Z"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Open group NORWAY HD & HEVC"].exists)
+        capture("Norway groups")
+        activate(app.buttons["All channels A–Z"])
+        XCTAssertTrue(app.buttons["Back to countries"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["All channels A–Z"].exists)
+        let channels = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch '"))
+        XCTAssertTrue(channels.firstMatch.waitForExistence(timeout: 10))
+        capture("Country channels A to Z")
+        activate(app.buttons["Countries"])
+        findNorway()
+        activate(app.buttons[wasFavorite ? "Favorite country Norway" : "Unfavorite country Norway"])
+        XCTAssertTrue(app.buttons[wasFavorite ? "Unfavorite country Norway" : "Favorite country Norway"].waitForExistence(timeout: 10))
+        activate(app.buttons["Explore Norway"])
+        activate(app.buttons["Open group NORWAY HD & HEVC"])
+        XCTAssertTrue(app.buttons["Channel group: NORWAY HD & HEVC"].waitForExistence(timeout: 10))
+        XCTAssertTrue(channels.firstMatch.waitForExistence(timeout: 10))
+        activate(app.buttons["Clear country filter"])
+    }
+
+    private func openNorway() {
+        activate(app.buttons["Countries"])
+        findNorway()
+    }
+    private func findNorway() {
+        let search = app.textFields["Find a country"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        #if os(tvOS)
+        focus(search)
+        XCUIRemote.shared.press(.select)
+        app.typeText("Norway")
+        XCUIRemote.shared.press(.menu)
+        #else
+        search.tap()
+        search.typeText("Norway\n")
+        #endif
+        XCTAssertTrue(app.buttons["Explore Norway"].waitForExistence(timeout: 10))
+    }
+
     private func activate(_ element: XCUIElement) {
         #if os(tvOS)
         focus(element)

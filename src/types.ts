@@ -27,7 +27,16 @@ export interface Group {
   name: string;
   count: number;
 }
+export interface Country {
+  code: string;
+  name: string;
+  count: number;
+  groups: Group[];
+  favorite: boolean;
+}
 export interface Query {
+  country?: string | null;
+  alphabetical?: boolean;
   search: string;
   group: string | null;
   favoritesOnly: boolean;
@@ -73,4 +82,10 @@ export interface Connection {
   playlistUrl: string;
   epgUrl: string;
 }
-export type View = "live" | "guide" | "favorites" | "history" | "settings";
+export type View =
+  | "countries"
+  | "live"
+  | "guide"
+  | "favorites"
+  | "history"
+  | "settings";

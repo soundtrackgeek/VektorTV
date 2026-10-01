@@ -1,5 +1,11 @@
 # Native Apple builds and TestFlight
 
+## Countries release — 0.5.0 (6)
+
+The project now targets **0.5.0 (6)** for both platforms. Country UI integration tests passed on iPhone and Apple TV. Release archives, uploads and VektorTV Internal availability are being verified; no availability is claimed yet. Previous release evidence follows below.
+
+## Previous released builds
+
 Project: `apps/apple/VektorTV.xcodeproj`. Shared schemes: **VektorTV-iOS** and **VektorTV-tvOS**. Both use bundle identifier `com.soundtrackgeek.vektortv`, Apple team `3L5769JKCM`, version `0.4.0` and build `5`. [VektorTV in App Store Connect](https://appstoreconnect.apple.com/apps/6817723723) supports both platforms. Rust `1.98.1` provides ARM64 iOS/tvOS device and simulator targets; the core is statically linked.
 
 **0.4.0 (5) is available in VektorTV Internal on both platforms.** Released Xcode 26.6 (17F113) built both Release archives on 2026-10-01. Automatic distribution exports/uploads succeeded; Apple completed processing and the internal group's Builds page shows **Testing** for both platforms. This release keeps Apple versioning aligned with the new Tauri Windows/macOS interface; native Apple UI behavior is unchanged from 0.3.0.

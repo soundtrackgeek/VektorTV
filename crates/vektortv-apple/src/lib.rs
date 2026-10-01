@@ -33,6 +33,8 @@ enum Request {
     Refresh { connection: Connection },
     List { query: ChannelQuery },
     Groups,
+    Countries,
+    FavoriteCountry { id: String, favorite: bool },
     Guide,
     ShortGuide { id: String },
     Schedule { id: String },
@@ -142,6 +144,17 @@ impl AppleCore {
                     return Ok(json!([]));
                 }
                 Ok(serde_json::to_value(state.store.groups()?).unwrap_or(Value::Null))
+            }
+            Request::Countries => {
+                let state = self.state()?;
+                if !Self::ready(&state)? {
+                    return Ok(json!([]));
+                }
+                Ok(serde_json::to_value(state.store.countries()?).unwrap_or(Value::Null))
+            }
+            Request::FavoriteCountry { id, favorite } => {
+                self.state()?.store.favorite_country(&id, favorite)?;
+                Ok(json!(true))
             }
             Request::Guide => {
                 let (connection, channels, revision) = {

@@ -1,5 +1,6 @@
 //! Portable IPTV domain, provider clients, parsing and SQLite persistence.
 //! No Tauri, Win32 or playback-engine dependencies. Secrets are never stored here.
+pub mod countries;
 pub mod m3u;
 pub mod models;
 pub mod provider;

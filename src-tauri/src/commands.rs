@@ -8,7 +8,7 @@ use std::sync::{atomic::Ordering, Mutex, MutexGuard};
 use tauri::{AppHandle, Emitter, Manager, State};
 use vektortv_core::{
     provider::{self, Connection},
-    ChannelPage, ChannelQuery, Group, Programme,
+    ChannelPage, ChannelQuery, Country, Group, Programme,
 };
 
 type Result<T> = std::result::Result<T, String>;
@@ -114,6 +114,20 @@ pub fn list_channels(state: State<'_, AppState>, query: ChannelQuery) -> Result<
 #[tauri::command]
 pub fn list_groups(state: State<'_, AppState>) -> Result<Vec<Group>> {
     lock(&state.store)?.groups().map_err(|e| e.to_string())
+}
+#[tauri::command]
+pub fn list_countries(state: State<'_, AppState>) -> Result<Vec<Country>> {
+    lock(&state.store)?.countries().map_err(|e| e.to_string())
+}
+#[tauri::command]
+pub fn set_country_favorite(
+    state: State<'_, AppState>,
+    code: String,
+    favorite: bool,
+) -> Result<()> {
+    lock(&state.store)?
+        .favorite_country(&code, favorite)
+        .map_err(|e| e.to_string())
 }
 #[tauri::command]
 pub async fn get_schedule(

@@ -1,6 +1,6 @@
 use crate::{
-    models::normalized, Channel, ChannelPage, ChannelQuery, ChannelView, Error, Group, Programme,
-    Result,
+    countries, models::normalized, Channel, ChannelPage, ChannelQuery, ChannelView, Country, Error,
+    Group, Programme, Result,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 use std::path::Path;
@@ -11,7 +11,7 @@ pub struct Store {
 
 impl Store {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let connection = Connection::open(path)?;
+        let mut connection = Connection::open(path)?;
         connection.busy_timeout(std::time::Duration::from_secs(5))?;
         connection.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
             CREATE TABLE IF NOT EXISTS channels (id TEXT PRIMARY KEY,name TEXT NOT NULL,search_name TEXT NOT NULL,group_name TEXT NOT NULL,logo TEXT,epg_id TEXT NOT NULL,stream_id INTEGER,position INTEGER NOT NULL);
@@ -21,7 +21,22 @@ impl Store {
             CREATE TABLE IF NOT EXISTS programmes (channel_id TEXT NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,start INTEGER NOT NULL,end INTEGER NOT NULL,category TEXT NOT NULL,PRIMARY KEY(channel_id,start,end,title));
             CREATE INDEX IF NOT EXISTS programme_lookup ON programmes(channel_id,start,end);
             CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY,value TEXT NOT NULL);
-            PRAGMA user_version=1;")?;
+            CREATE TABLE IF NOT EXISTS country_groups (group_name TEXT PRIMARY KEY,country_code TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS country_group_code ON country_groups(country_code);
+            CREATE TABLE IF NOT EXISTS country_favourites (country_code TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS channel_sort (channel_id TEXT PRIMARY KEY,sort_name TEXT NOT NULL);
+            PRAGMA user_version=2;")?;
+        // Backfill cached libraries once; no provider refresh is required.
+        let mapped: bool = connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM metadata WHERE key='country_mapping' AND value='1')",
+            [],
+            |r| r.get(0),
+        )?;
+        if !mapped {
+            let tx = connection.transaction()?;
+            rebuild_countries(&tx)?;
+            tx.commit()?;
+        }
         Ok(Self { connection })
     }
     pub fn metadata(&self, key: &str) -> Result<Option<String>> {
@@ -122,6 +137,7 @@ impl Store {
             }
         }
         tx.execute("INSERT INTO metadata VALUES ('channels_updated',?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [updated_at.to_string()])?;
+        rebuild_countries(&tx)?;
         tx.commit()?;
         Ok(())
     }
@@ -176,30 +192,84 @@ impl Store {
             .collect::<std::result::Result<_, _>>()?;
         Ok(rows)
     }
+    pub fn countries(&self) -> Result<Vec<Country>> {
+        let mut statement = self.connection.prepare("SELECT g.country_code,c.group_name,COUNT(*),f.country_code IS NOT NULL FROM channels c JOIN country_groups g ON g.group_name=c.group_name LEFT JOIN country_favourites f ON f.country_code=g.country_code GROUP BY g.country_code,c.group_name ORDER BY c.group_name COLLATE NOCASE")?;
+        let mut countries = std::collections::BTreeMap::<String, Country>::new();
+        for row in statement.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, usize>(2)?,
+                r.get::<_, bool>(3)?,
+            ))
+        })? {
+            let (code, group, count, favorite) = row?;
+            let country = countries.entry(code.clone()).or_insert_with(|| Country {
+                name: countries::name(&code)
+                    .unwrap_or("International & unassigned")
+                    .into(),
+                code,
+                count: 0,
+                groups: vec![],
+                favorite,
+            });
+            country.count += count;
+            country.groups.push(Group { name: group, count });
+        }
+        let mut countries: Vec<_> = countries.into_values().collect();
+        countries.sort_by_key(|c| {
+            (
+                !c.favorite,
+                c.code == countries::UNASSIGNED,
+                countries::sort_key(&c.name),
+            )
+        });
+        Ok(countries)
+    }
+    pub fn favorite_country(&self, code: &str, favorite: bool) -> Result<()> {
+        if countries::name(code).is_none() {
+            return Err(Error::Invalid("Unknown country.".into()));
+        }
+        if favorite {
+            self.connection.execute(
+                "INSERT OR IGNORE INTO country_favourites VALUES (?1)",
+                [code],
+            )?;
+        } else {
+            self.connection.execute(
+                "DELETE FROM country_favourites WHERE country_code=?1",
+                [code],
+            )?;
+        }
+        Ok(())
+    }
     pub fn list(&self, query: &ChannelQuery, now: i64) -> Result<ChannelPage> {
         let search = normalized(&query.search)
             .replace('\\', "\\\\")
             .replace('%', "\\%")
             .replace('_', "\\_");
-        let filter = " FROM channels c LEFT JOIN favourites f ON f.channel_id=c.id LEFT JOIN history h ON h.channel_id=c.id
+        let filter = " FROM channels c LEFT JOIN favourites f ON f.channel_id=c.id LEFT JOIN history h ON h.channel_id=c.id JOIN country_groups g ON g.group_name=c.group_name JOIN channel_sort s ON s.channel_id=c.id
           WHERE (?1='' OR c.search_name LIKE '%'||?1||'%' ESCAPE '\\') AND (?2 IS NULL OR c.group_name=?2)
-          AND (?3=0 OR f.channel_id IS NOT NULL) AND (?4=0 OR h.channel_id IS NOT NULL)";
+          AND (?3=0 OR f.channel_id IS NOT NULL) AND (?4=0 OR h.channel_id IS NOT NULL) AND (?5 IS NULL OR g.country_code=?5)";
         let total: usize = self.connection.query_row(
             &format!("SELECT COUNT(*){filter}"),
             params![
                 search,
                 query.group,
                 query.favorites_only,
-                query.history_only
+                query.history_only,
+                query.country
             ],
             |r| r.get(0),
         )?;
         let order = if query.history_only {
             "h.watched_at DESC,c.position"
+        } else if query.alphabetical {
+            "s.sort_name,c.name,c.id"
         } else {
             "c.position"
         };
-        let sql = format!("SELECT c.id,c.name,c.group_name,c.logo,c.epg_id,c.stream_id,f.channel_id IS NOT NULL,h.watched_at{filter} ORDER BY {order} LIMIT ?5 OFFSET ?6");
+        let sql = format!("SELECT c.id,c.name,c.group_name,c.logo,c.epg_id,c.stream_id,f.channel_id IS NOT NULL,h.watched_at{filter} ORDER BY {order} LIMIT ?6 OFFSET ?7");
         let mut statement = self.connection.prepare(&sql)?;
         let mut channels = statement
             .query_map(
@@ -208,6 +278,7 @@ impl Store {
                     query.group,
                     query.favorites_only,
                     query.history_only,
+                    query.country,
                     query.limit.unwrap_or(100).clamp(1, 200),
                     query.offset
                 ],
@@ -261,6 +332,27 @@ impl Store {
         self.connection.execute("INSERT INTO history VALUES (?1,?2) ON CONFLICT(channel_id) DO UPDATE SET watched_at=excluded.watched_at", params![id,now])?;
         Ok(())
     }
+}
+
+fn rebuild_countries(tx: &rusqlite::Transaction<'_>) -> Result<()> {
+    tx.execute("DELETE FROM country_groups", [])?;
+    let mut groups = tx.prepare("SELECT DISTINCT group_name FROM channels")?;
+    for group in groups.query_map([], |r| r.get::<_, String>(0))? {
+        let group = group?;
+        tx.execute(
+            "INSERT INTO country_groups VALUES (?1,?2)",
+            params![group, countries::detect(&group)],
+        )?;
+    }
+    tx.execute("DELETE FROM channel_sort", [])?;
+    let mut channels = tx.prepare("SELECT id,name FROM channels")?;
+    let mut insert = tx.prepare("INSERT INTO channel_sort VALUES (?1,?2)")?;
+    for row in channels.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))? {
+        let (id, name) = row?;
+        insert.execute(params![id, countries::sort_key(&name)])?;
+    }
+    tx.execute("INSERT INTO metadata VALUES ('country_mapping','1') ON CONFLICT(key) DO UPDATE SET value=excluded.value", [])?;
+    Ok(())
 }
 
 fn read_channel(row: &rusqlite::Row<'_>) -> rusqlite::Result<Channel> {
@@ -348,6 +440,106 @@ mod tests {
         );
         assert!(store.replace_channels(&[], 40).is_err());
         assert_eq!(store.channel_count().unwrap(), 2);
+    }
+    #[test]
+    fn countries_filter_before_paging_and_sort_across_all_groups() {
+        let mut store = Store::open(":memory:").unwrap();
+        let catalog: Vec<_> = [
+            ("z", "Zulu", "AL| ALBANIA SPORTS"),
+            ("b", "Bravo", "AL| ALBANIA"),
+            ("a", "Álpha", "AL| ALBANIA SPORTS"),
+            ("g", "Other", "AR| BEIN SPORTS"),
+            ("d", "Outside", "AR| ALGERIA"),
+        ]
+        .into_iter()
+        .map(|(id, name, group)| Channel {
+            id: id.into(),
+            name: name.into(),
+            group: group.into(),
+            logo: None,
+            epg_id: id.into(),
+            stream_id: None,
+        })
+        .collect();
+        store.replace_channels(&catalog, 10).unwrap();
+        let countries = store.countries().unwrap();
+        let albania = countries.iter().find(|c| c.code == "al").unwrap();
+        assert_eq!((albania.count, albania.groups.len()), (3, 2));
+        assert_eq!(
+            countries.iter().map(|c| c.count).sum::<usize>(),
+            catalog.len()
+        );
+        let mut query = ChannelQuery {
+            country: Some("al".into()),
+            alphabetical: true,
+            limit: Some(2),
+            ..Default::default()
+        };
+        let page = store.list(&query, 100).unwrap();
+        assert_eq!(page.total, 3);
+        assert_eq!(
+            page.channels
+                .iter()
+                .map(|c| c.channel.id.as_str())
+                .collect::<Vec<_>>(),
+            ["a", "b"]
+        );
+        query.offset = 2;
+        assert_eq!(store.list(&query, 100).unwrap().channels[0].channel.id, "z");
+        query.offset = 0;
+        query.group = Some("AR| ALGERIA".into());
+        assert_eq!(store.list(&query, 100).unwrap().total, 0);
+        query.group = None;
+        query.search = "ALPHA".into();
+        // Existing search keeps its documented accent-sensitive behavior.
+        assert_eq!(store.list(&query, 100).unwrap().total, 0);
+        query.search = "Bravo".into();
+        assert_eq!(store.list(&query, 100).unwrap().total, 1);
+        store.favorite("b", true).unwrap();
+        query.search.clear();
+        query.favorites_only = true;
+        assert_eq!(store.list(&query, 100).unwrap().total, 1);
+        query.country = Some("zz".into());
+        query.favorites_only = false;
+        assert_eq!(store.list(&query, 100).unwrap().channels[0].channel.id, "g");
+    }
+    #[test]
+    fn country_favorites_survive_restart_refresh_and_cached_library_upgrade() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("library.db");
+        {
+            let mut store = Store::open(&path).unwrap();
+            let mut catalog = channels();
+            catalog[0].group = "Norway".into();
+            catalog[1].group = "Albania".into();
+            store.replace_channels(&catalog, 10).unwrap();
+            store.favorite_country("no", true).unwrap();
+            store.replace_channels(&catalog, 20).unwrap();
+            assert_eq!(store.countries().unwrap()[0].code, "no");
+            // Emulate a pre-countries cache without replacing channel/history data.
+            store.connection.execute_batch("DROP TABLE country_groups; DROP TABLE channel_sort; DELETE FROM metadata WHERE key='country_mapping'; PRAGMA user_version=1;").unwrap();
+        }
+        let store = Store::open(path).unwrap();
+        assert_eq!(store.channel_count().unwrap(), 2);
+        let country = &store.countries().unwrap()[0];
+        assert_eq!(country.code, "no");
+        assert!(country.favorite);
+        assert_eq!(
+            store
+                .list(
+                    &ChannelQuery {
+                        country: Some("no".into()),
+                        ..Default::default()
+                    },
+                    100
+                )
+                .unwrap()
+                .total,
+            1
+        );
+        store.favorite_country("no", false).unwrap();
+        assert_eq!(store.countries().unwrap()[0].code, "al");
+        assert!(store.favorite_country("invalid", true).is_err());
     }
     #[test]
     fn programme_boundaries_and_duplicate_imports() {

@@ -2,6 +2,21 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.5.0] - 2026-10-01
+
+### Added
+
+- Dedicated Countries navigation on iPhone, iPad, Apple TV, Windows and macOS with bundled SVG flags and country-name boxes.
+- Persistent favorite countries pinned above the alphabetical country list, independent of channel favorites.
+- Country detail with provider groups and an All channels A–Z action that sorts the entire country before pagination.
+- Shared country detection with country-name aliases, leading ISO/provider codes and an International & unassigned fallback for ambiguous or regional groups.
+- Automatic country indexing for existing cached libraries, plus regression coverage for migration, persistence, country filtering and alphabetical pagination.
+
+### Changed
+
+- Keep channel search, favorites, history, group filtering and playback available within a visible, clearable country scope.
+- Align native Apple and desktop versions at 0.5.0; increment the Apple build to 6.
+
 ## [0.4.0] - 2026-10-01
 
 ### Added

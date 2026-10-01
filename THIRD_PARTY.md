@@ -9,3 +9,7 @@ The Mac script copies `lib`, `plugins` and `share` from VLC.app and includes the
 The application dynamically links the copied runtime and does not modify VLC. A distribution intended for public release must review the licenses of its selected plugins and fulfill any corresponding-source/redistribution obligations. Windows installers are unsigned; local Mac bundles use ad-hoc signing and are not notarized.
 
 React, Tauri, Lucide, SQLite and the other dependencies retain their own licenses in their packages. `package-lock.json` and `Cargo.lock` record the exact dependency versions.
+
+## Country assets
+
+Bundled SVG flags and ISO country names are MIT-licensed. See [asset sources and notices](third-party/README.md). Both native Apple and desktop packages include `CountryAssets-LICENSE.txt`.

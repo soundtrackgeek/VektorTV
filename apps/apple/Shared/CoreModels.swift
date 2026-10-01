@@ -44,6 +44,14 @@ struct ChannelGroup: Decodable, Identifiable, Equatable, Sendable {
     let count: Int
     var id: String { name }
 }
+struct Country: Decodable, Identifiable, Equatable, Sendable {
+    let code: String
+    let name: String
+    let count: Int
+    let groups: [ChannelGroup]
+    let favorite: Bool
+    var id: String { code }
+}
 struct LibraryStatus: Decodable, Sendable {
     let channels: Int
     let updated: String?
@@ -52,6 +60,8 @@ struct LibraryStatus: Decodable, Sendable {
 struct ChannelQuery: Encodable, Sendable {
     var search = ""
     var group: String?
+    var country: String?
+    var alphabetical = false
     var favoritesOnly = false
     var historyOnly = false
     var offset = 0

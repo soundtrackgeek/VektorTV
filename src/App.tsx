@@ -11,6 +11,7 @@ import {
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import Brand from "./components/Brand";
+import CountryBrowser from "./components/CountryBrowser";
 import ChannelBrowser from "./components/ChannelBrowser";
 import PlayerView from "./components/PlayerView";
 import Guide from "./components/Guide";
@@ -20,6 +21,7 @@ import type {
   AppInfo,
   Channel,
   ChannelPage,
+  Country,
   Group,
   PlayerStatus,
   Programme,
@@ -40,13 +42,23 @@ const initialStatus: PlayerStatus = {
 export default function App() {
   const [view, setView] = useState<View>(() => {
     const saved = localStorage.getItem("vektortv.view");
-    return ["live", "guide", "favorites", "history", "settings"].includes(
-      saved || "",
-    )
+    return [
+      "countries",
+      "live",
+      "guide",
+      "favorites",
+      "history",
+      "settings",
+    ].includes(saved || "")
       ? (saved as View)
       : "live";
   });
   const [info, setInfo] = useState<AppInfo | null>(null);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countryCode, setCountryCode] = useState<string | null>(() =>
+    localStorage.getItem("vektortv.country"),
+  );
+  const country = countries.find((c) => c.code === countryCode);
   const [groups, setGroups] = useState<Group[]>([]);
   const [group, setGroup] = useState(
     () => localStorage.getItem("vektortv.group") || "",
@@ -81,12 +93,14 @@ export default function App() {
   const statusSequence = useRef(new RequestSequence());
 
   const refreshInfo = useCallback(async () => {
-    const [nextInfo, nextGroups] = await Promise.all([
+    const [nextInfo, nextGroups, nextCountries] = await Promise.all([
       api.info(),
       api.groups(),
+      api.countries(),
     ]);
     setInfo(nextInfo);
     setGroups(nextGroups);
+    setCountries(nextCountries);
     return nextInfo;
   }, []);
   const sync = useCallback(async () => {
@@ -170,10 +184,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("vektortv.view", view);
     localStorage.setItem("vektortv.group", group);
-  }, [view, group]);
+    if (countryCode) localStorage.setItem("vektortv.country", countryCode);
+    else localStorage.removeItem("vektortv.country");
+  }, [view, group, countryCode]);
   const query = {
     search: debouncedSearch,
     group: group || null,
+    country: countryCode,
+    alphabetical: !!countryCode && view !== "history",
     favoritesOnly: view === "favorites",
     historyOnly: view === "history",
     offset: 0,
@@ -188,6 +206,8 @@ export default function App() {
       .list({
         search: debouncedSearch,
         group: group || null,
+        country: countryCode,
+        alphabetical: !!countryCode && view !== "history",
         favoritesOnly: view === "favorites",
         historyOnly: view === "history",
         offset: 0,
@@ -202,7 +222,7 @@ export default function App() {
       .finally(() => {
         if (queries.current.current(token)) setLoading(false);
       });
-  }, [debouncedSearch, group, view, revision]);
+  }, [debouncedSearch, group, countryCode, view, revision]);
   const loadMore = async () => {
     if (moreBusy.current || loading || page.channels.length >= page.total)
       return;
@@ -332,7 +352,7 @@ export default function App() {
       }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        if (view === "settings") setView("live");
+        if (view === "settings" || view === "countries") setView("live");
         window.setTimeout(() => searchRef.current?.focus(), 0);
         return;
       }
@@ -368,7 +388,7 @@ export default function App() {
     setError(null);
   };
   const openSearch = () => {
-    if (view === "settings") setView("live");
+    if (view === "settings" || view === "countries") setView("live");
     window.setTimeout(() => searchRef.current?.focus(), 0);
   };
   return (
@@ -379,10 +399,14 @@ export default function App() {
           <nav className="main-tabs" aria-label="Main navigation">
             <button
               className={
-                view !== "guide" && view !== "settings" ? "active" : ""
+                view !== "guide" && view !== "settings" && view !== "countries"
+                  ? "active"
+                  : ""
               }
               aria-current={
-                view !== "guide" && view !== "settings" ? "page" : undefined
+                view !== "guide" && view !== "settings" && view !== "countries"
+                  ? "page"
+                  : undefined
               }
               onClick={() => go("live")}
             >
@@ -394,6 +418,13 @@ export default function App() {
               onClick={() => go("guide")}
             >
               TV Guide
+            </button>
+            <button
+              className={view === "countries" ? "active" : ""}
+              aria-current={view === "countries" ? "page" : undefined}
+              onClick={() => go("countries")}
+            >
+              Countries
             </button>
           </nav>
           <div className="header-actions">
@@ -452,10 +483,17 @@ export default function App() {
       <main
         className={`content ${view === "settings" ? "settings-content" : ""}`}
       >
-        {view !== "settings" && !fullscreen && (
+        {view !== "settings" && view !== "countries" && !fullscreen && (
           <ChannelBrowser
             channels={page.channels}
-            groups={groups}
+            groups={country?.groups ?? groups}
+            country={country}
+            onCountries={() => go("countries")}
+            onClearCountry={() => {
+              setCountryCode(null);
+              setGroup("");
+              setSearch("");
+            }}
             group={group}
             setGroup={setGroup}
             search={search}
@@ -484,7 +522,28 @@ export default function App() {
             configured={!!info?.configured}
           />
         )}
-        {view === "settings" && !fullscreen ? (
+        {view === "countries" && !fullscreen ? (
+          <CountryBrowser
+            countries={countries}
+            loading={!info}
+            onSettings={() => go("settings")}
+            onFavorite={async (c) => {
+              try {
+                await api.favoriteCountry(c.code, !c.favorite);
+                setCountries(await api.countries());
+              } catch (e) {
+                setError(errorText(e));
+              }
+            }}
+            onOpen={(c, selectedGroup) => {
+              setCountryCode(c.code);
+              setGroup(selectedGroup ?? "");
+              setSearch("");
+              setDebouncedSearch("");
+              setView("live");
+            }}
+          />
+        ) : view === "settings" && !fullscreen ? (
           <Settings
             info={info ? { ...info, progress } : null}
             onSaved={() => {
@@ -535,7 +594,7 @@ export default function App() {
         )}
       </main>
       {!fullscreen &&
-        (view === "guide" || view === "settings") &&
+        (view === "guide" || view === "settings" || view === "countries") &&
         selected &&
         status.channelId && (
           <div className="now-playing-bar">

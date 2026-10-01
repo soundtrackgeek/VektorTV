@@ -6,6 +6,7 @@ struct ChannelBrowser: View {
     let guide: Bool
     let wide: Bool
     let queryKey: String
+    let showCountries: () -> Void
     let selectedGuideID: String?
     let schedule: (Channel) -> Void
     @FocusState private var searchFocused: Bool
@@ -85,6 +86,17 @@ struct ChannelBrowser: View {
 
     private var browserControls: some View {
         VStack(alignment: .leading, spacing: 14) {
+            if let country = library.country {
+                HStack {
+                    Button(action: showCountries) {
+                        HStack(spacing: 8) { CountryFlag(code: country.code, width: 28); Text(country.name).lineLimit(1) }
+                    }.buttonStyle(CinemaButtonStyle()).font(Theme.detailFont).accessibilityLabel("Back to countries")
+                    Spacer()
+                    Button { library.clearCountry() } label: { Image(systemName: "xmark") }
+                        .buttonStyle(CinemaButtonStyle()).accessibilityLabel("Clear country filter")
+                }
+                Text(library.group == nil ? "All channels A–Z" : "Country channels").font(Theme.detailFont).foregroundStyle(Theme.muted)
+            }
             HStack {
                 Text("Your channels").font(Theme.sectionFont)
                 Spacer()
@@ -219,7 +231,7 @@ struct GroupChooser: View {
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
     private var groups: [ChannelGroup] {
-        search.isEmpty ? library.groups : library.groups.filter { $0.name.localizedStandardContains(search) }
+        search.isEmpty ? library.availableGroups : library.availableGroups.filter { $0.name.localizedStandardContains(search) }
     }
     var body: some View {
         List {
@@ -227,7 +239,7 @@ struct GroupChooser: View {
             TextField("Find a group", text: $search).autocorrectionDisabled()
             #endif
             Button { library.group = nil; dismiss() } label: {
-                Label("All groups", systemImage: library.group == nil ? "checkmark.circle.fill" : "circle")
+                Label(library.countryCode == nil ? "All groups" : "All channels A–Z", systemImage: library.group == nil ? "checkmark.circle.fill" : "circle")
             }
             ForEach(groups) { group in
                 Button { library.group = group.name; dismiss() } label: {

@@ -47,12 +47,24 @@ pub struct Group {
     pub count: usize,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Country {
+    pub code: String,
+    pub name: String,
+    pub count: usize,
+    pub groups: Vec<Group>,
+    pub favorite: bool,
+}
+
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChannelQuery {
     #[serde(default)]
     pub search: String,
     pub group: Option<String>,
+    pub country: Option<String>,
+    #[serde(default)]
+    pub alphabetical: bool,
     #[serde(default)]
     pub favorites_only: bool,
     #[serde(default)]

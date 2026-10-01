@@ -1,5 +1,9 @@
 # Verification
 
+## Countries — 0.5.0 (6)
+
+Implementation and release verification on 2026-10-01. Shared Rust tests, workspace Clippy, frontend lint/tests/build and the country UI integration test on iPhone and Apple TV have passed. The country test covers flag tiles, favorite persistence after app restart, country groups, A–Z channels and clearing the scope. iPad, packaged desktop runtime, Windows CI and Apple distribution are in progress; this section will be updated with actual outcomes.
+
 ## Desktop and Apple release — 0.4.0
 
 Checks on 2026-10-01 on Apple Silicon macOS 26.6.2:
