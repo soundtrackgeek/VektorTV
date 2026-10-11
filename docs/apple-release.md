@@ -2,7 +2,16 @@
 
 ## Favorites release — 0.9.0 (12)
 
-Version 0.9.0/build 12 is configured for both native apps. Release archive, upload and VektorTV Internal processing verification are in progress; this entry does not claim availability. Results will be updated after Apple processing.
+**0.9.0 (12) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-11 at approximately **17:37 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both final Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
+
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.9.0 (12) | 2026-10-11 17:33:04 | Testing — VektorTV Internal | [iOS build 12](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/c205c13d-c58b-4ce6-9ca5-5dc2de78193d) |
+| tvOS | 0.9.0 (12) | 2026-10-11 17:32:39 | Testing — VektorTV Internal | [tvOS build 12](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/0d8e2168-8d29-497d-b10f-6541edb1e027) |
+
+Both archives include the final Favorites shortcut, shared persisted order and touch/remote arrangement. Archive manifests confirm version 0.9.0/build 12 and both playback linkage guards passed. The iPhone, iPad and Apple TV arrangement tests and the final iPhone live playback/fullscreen/return/stop test passed. Desktop packaging and native Mac verification are recorded in [verification.md](verification.md).
+
+Archives/exports: `apps/apple/build/0.9.0-12/`. Logs: `/tmp/vektortv-090-archive-{ios,tvos}-final.log` and `/tmp/vektortv-090-upload-{ios,tvos}.log`.
 
 ## Playback compatibility release — 0.8.0 (11)
 
