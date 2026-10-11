@@ -9,6 +9,28 @@ pub struct Store {
     connection: Connection,
 }
 
+const CHANNEL_FILTER: &str = " FROM channels c LEFT JOIN favourites f ON f.channel_id=c.id LEFT JOIN history h ON h.channel_id=c.id JOIN country_groups g ON g.group_name=c.group_name JOIN channel_sort s ON s.channel_id=c.id
+    WHERE (?1='' OR c.search_name LIKE '%'||?1||'%' ESCAPE '\\') AND (?2 IS NULL OR c.group_name=?2)
+    AND (?3=0 OR f.channel_id IS NOT NULL) AND (?4=0 OR h.channel_id IS NOT NULL) AND (?5 IS NULL OR g.country_code=?5)";
+
+fn channel_search(query: &ChannelQuery) -> String {
+    normalized(&query.search)
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+fn channel_order(query: &ChannelQuery) -> &'static str {
+    if query.history_only {
+        "h.watched_at DESC,c.position"
+    } else if query.favorites_only {
+        "f.position,c.position,c.id"
+    } else if query.alphabetical {
+        "s.sort_name,c.name,c.id"
+    } else {
+        "c.position"
+    }
+}
+
 impl Store {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let mut connection = Connection::open(path)?;
@@ -307,13 +329,8 @@ impl Store {
         Ok(())
     }
     pub fn list(&self, query: &ChannelQuery, now: i64) -> Result<ChannelPage> {
-        let search = normalized(&query.search)
-            .replace('\\', "\\\\")
-            .replace('%', "\\%")
-            .replace('_', "\\_");
-        let filter = " FROM channels c LEFT JOIN favourites f ON f.channel_id=c.id LEFT JOIN history h ON h.channel_id=c.id JOIN country_groups g ON g.group_name=c.group_name JOIN channel_sort s ON s.channel_id=c.id
-          WHERE (?1='' OR c.search_name LIKE '%'||?1||'%' ESCAPE '\\') AND (?2 IS NULL OR c.group_name=?2)
-          AND (?3=0 OR f.channel_id IS NOT NULL) AND (?4=0 OR h.channel_id IS NOT NULL) AND (?5 IS NULL OR g.country_code=?5)";
+        let search = channel_search(query);
+        let filter = CHANNEL_FILTER;
         let total: usize = self.connection.query_row(
             &format!("SELECT COUNT(*){filter}"),
             params![
@@ -325,15 +342,7 @@ impl Store {
             ],
             |r| r.get(0),
         )?;
-        let order = if query.history_only {
-            "h.watched_at DESC,c.position"
-        } else if query.favorites_only {
-            "f.position,c.position,c.id"
-        } else if query.alphabetical {
-            "s.sort_name,c.name,c.id"
-        } else {
-            "c.position"
-        };
+        let order = channel_order(query);
         let sql = format!("SELECT c.id,c.name,c.group_name,c.logo,c.epg_id,c.stream_id,f.channel_id IS NOT NULL,h.watched_at{filter} ORDER BY {order} LIMIT ?6 OFFSET ?7");
         let mut statement = self.connection.prepare(&sql)?;
         let mut channels = statement
@@ -367,6 +376,48 @@ impl Store {
             total,
             offset: query.offset,
         })
+    }
+    /// Resolve against the entire browsing scope, independent of loaded pages.
+    /// Missing/removed anchors and empty/single-channel scopes do not retune.
+    pub fn adjacent_channel(
+        &self,
+        query: &ChannelQuery,
+        id: &str,
+        direction: i32,
+        now: i64,
+    ) -> Result<Option<ChannelView>> {
+        if direction != -1 && direction != 1 {
+            return Err(Error::Invalid(
+                "Channel direction must be left or right.".into(),
+            ));
+        }
+        let sql = format!("WITH scoped AS (SELECT c.id,ROW_NUMBER() OVER (ORDER BY {})-1 AS position,COUNT(*) OVER () AS total{})
+            SELECT (position+total+?7)%total FROM scoped WHERE id=?6 AND total>1", channel_order(query), CHANNEL_FILTER);
+        let offset: Option<usize> = self
+            .connection
+            .query_row(
+                &sql,
+                params![
+                    channel_search(query),
+                    query.group,
+                    query.favorites_only,
+                    query.history_only,
+                    query.country,
+                    id,
+                    direction
+                ],
+                |row| row.get(0),
+            )
+            .optional()?;
+        let Some(offset) = offset else {
+            return Ok(None);
+        };
+        let next_query = ChannelQuery {
+            offset,
+            limit: Some(1),
+            ..query.clone()
+        };
+        Ok(self.list(&next_query, now)?.channels.into_iter().next())
     }
     pub fn schedule(&self, id: &str, from: i64, until: i64) -> Result<Vec<Programme>> {
         let mut statement = self.connection.prepare("SELECT channel_id,title,description,start,end,category FROM programmes WHERE channel_id=?1 AND end>?2 AND start<?3 ORDER BY start LIMIT 200")?;
@@ -565,6 +616,144 @@ mod tests {
                 stream_id: Some(8),
             },
         ]
+    }
+    #[test]
+    fn zapping_stays_in_scope_across_pages_and_wraps_in_saved_order() {
+        let mut store = Store::open(":memory:").unwrap();
+        let mut catalog = Vec::new();
+        for index in 0..205 {
+            let mut channel = channels()[0].clone();
+            channel.id = format!("zap-{index}");
+            channel.name = format!("Zap {index:03}");
+            channel.group = if index == 203 {
+                "NO| Sports"
+            } else if index == 204 {
+                "UK| News"
+            } else {
+                "NO| Norway"
+            }
+            .into();
+            catalog.push(channel);
+        }
+        store.replace_channels(&catalog, 0).unwrap();
+        let adjacent = |store: &Store, query: &ChannelQuery, id: &str, direction| {
+            store
+                .adjacent_channel(query, id, direction, 0)
+                .unwrap()
+                .map(|channel| channel.channel.id)
+        };
+        let category = ChannelQuery {
+            group: Some("NO| Norway".into()),
+            limit: Some(1),
+            offset: 100,
+            ..Default::default()
+        };
+        assert_eq!(
+            adjacent(&store, &category, "zap-79", 1).as_deref(),
+            Some("zap-80")
+        );
+        assert_eq!(
+            adjacent(&store, &category, "zap-199", 1).as_deref(),
+            Some("zap-200")
+        );
+        assert_eq!(
+            adjacent(&store, &category, "zap-202", 1).as_deref(),
+            Some("zap-0")
+        );
+        assert_eq!(
+            adjacent(&store, &category, "zap-0", -1).as_deref(),
+            Some("zap-202")
+        );
+        assert_eq!(adjacent(&store, &category, "zap-204", 1), None);
+        let country = ChannelQuery {
+            country: Some("no".into()),
+            alphabetical: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            adjacent(&store, &country, "zap-203", 1).as_deref(),
+            Some("zap-0")
+        );
+        let searched = ChannelQuery {
+            search: "Zap 10".into(),
+            ..country.clone()
+        };
+        assert_eq!(
+            adjacent(&store, &searched, "zap-109", 1).as_deref(),
+            Some("zap-100")
+        );
+        assert_eq!(
+            adjacent(
+                &store,
+                &ChannelQuery {
+                    search: "Zap 000".into(),
+                    ..Default::default()
+                },
+                "zap-0",
+                1
+            ),
+            None
+        );
+        assert_eq!(
+            adjacent(
+                &store,
+                &ChannelQuery {
+                    search: "absent".into(),
+                    ..Default::default()
+                },
+                "zap-0",
+                1
+            ),
+            None
+        );
+        for id in ["zap-0", "zap-80", "zap-204"] {
+            store.favorite(id, true).unwrap();
+        }
+        store.move_favorite("zap-204", "zap-0", true).unwrap();
+        let favorites = ChannelQuery {
+            favorites_only: true,
+            alphabetical: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            adjacent(&store, &favorites, "zap-204", 1).as_deref(),
+            Some("zap-0")
+        );
+        assert_eq!(
+            adjacent(&store, &favorites, "zap-80", 1).as_deref(),
+            Some("zap-204")
+        );
+        assert_eq!(
+            adjacent(
+                &store,
+                &ChannelQuery {
+                    group: category.group.clone(),
+                    ..favorites.clone()
+                },
+                "zap-80",
+                1
+            )
+            .as_deref(),
+            Some("zap-0")
+        );
+        store.favorite("zap-80", false).unwrap();
+        assert_eq!(adjacent(&store, &favorites, "zap-80", 1), None);
+        store.watched("zap-0", 10).unwrap();
+        store.watched("zap-80", 20).unwrap();
+        assert_eq!(
+            adjacent(
+                &store,
+                &ChannelQuery {
+                    history_only: true,
+                    ..Default::default()
+                },
+                "zap-80",
+                1
+            )
+            .as_deref(),
+            Some("zap-0")
+        );
+        assert!(store.adjacent_channel(&category, "zap-0", 0, 0).is_err());
     }
     #[test]
     fn favorite_order_migrates_and_survives_restart_refresh_and_filtered_moves() {

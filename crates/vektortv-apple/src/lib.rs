@@ -38,6 +38,11 @@ enum Request {
     List {
         query: ChannelQuery,
     },
+    Adjacent {
+        query: ChannelQuery,
+        id: String,
+        direction: i32,
+    },
     Groups,
     Countries,
     FavoriteCountry {
@@ -167,6 +172,17 @@ impl AppleCore {
                     return Ok(json!({"channels":[], "total":0, "offset":0}));
                 }
                 Ok(serde_json::to_value(state.store.list(&query, now)?).unwrap_or(Value::Null))
+            }
+            Request::Adjacent {
+                query,
+                id,
+                direction,
+            } => {
+                let state = self.state()?;
+                if !Self::ready(&state)? {
+                    return Ok(json!({"channel": null}));
+                }
+                Ok(json!({"channel": state.store.adjacent_channel(&query, &id, direction, now)?}))
             }
             Request::Groups => {
                 let state = self.state()?;

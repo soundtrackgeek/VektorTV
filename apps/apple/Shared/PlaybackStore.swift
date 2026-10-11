@@ -7,6 +7,7 @@ import VLCKit
 final class PlaybackStore {
     let player = AVPlayer()
     var fallbackPlayer: VLCMediaPlayer?
+    var usesFallbackSurface = false
     @ObservationIgnored let fallbackSurface = UIView()
     var channel: Channel?
     var isLoading = false
@@ -47,7 +48,7 @@ final class PlaybackStore {
         navigationTask = lookup
         do {
             guard let next = try await lookup.value, epoch == navigationGeneration else { return false }
-            if request == navigationRequest { await tune(next, library: library) }
+            if request == navigationRequest { await tune(next, library: library, preservingSurface: true) }
             return epoch == navigationGeneration
         } catch {
             if epoch == navigationGeneration, request == navigationRequest {
@@ -58,10 +59,10 @@ final class PlaybackStore {
         }
     }
 
-    private func tune(_ channel: Channel, library: LibraryStore) async {
+    private func tune(_ channel: Channel, library: LibraryStore, preservingSurface: Bool = false) async {
         let fullScreen = isPresented
         generation += 1
-        clearPlayers()
+        clearPlayers(keepingNativeItem: preservingSurface)
         recordedID = nil
         error = nil
         isPaused = false
@@ -135,6 +136,7 @@ final class PlaybackStore {
         fallback.media = VLCMedia(url: url)
         fallback.drawable = fallbackSurface
         fallbackPlayer = fallback
+        usesFallbackSurface = true
         fallback.play()
         monitorTask = Task { [weak self] in
             let deadline = Date.now.addingTimeInterval(30)
@@ -177,6 +179,7 @@ final class PlaybackStore {
     }
 
     private func didStart(_ channel: Channel, library: LibraryStore) async {
+        usesFallbackSurface = fallbackPlayer != nil
         isLoading = false
         guard recordedID != channel.id else { return }
         recordedID = channel.id
@@ -192,12 +195,14 @@ final class PlaybackStore {
             else { player.pause() }
         }
     }
-    private func clearPlayers() {
+    private func clearPlayers(keepingNativeItem: Bool = false) {
         monitorTask?.cancel()
         monitorTask = nil
         itemObservation = nil
         player.pause()
-        player.replaceCurrentItem(with: nil)
+        // Retain the paused live item during AVKit channel flipping so the
+        // system continues accepting swipes while the next stream resolves.
+        if !keepingNativeItem { player.replaceCurrentItem(with: nil) }
         fallbackPlayer?.stop()
         fallbackPlayer?.drawable = nil
         fallbackPlayer = nil
@@ -212,6 +217,7 @@ final class PlaybackStore {
         navigationTask?.cancel()
         navigationTask = nil
         browsingScope = nil
+        usesFallbackSurface = false
         generation += 1
         clearPlayers()
         channel = nil

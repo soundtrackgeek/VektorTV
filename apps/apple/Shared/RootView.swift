@@ -213,7 +213,7 @@ struct FullScreenPlayer: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
-            if playback.fallbackPlayer != nil {
+            if playback.usesFallbackSurface {
                 FallbackPlayer(videoView: playback.fallbackSurface, onZap: { direction in
                     Task { await playback.zap(direction, library: library) }
                 }).ignoresSafeArea().accessibilityIdentifier("full-screen-player")
@@ -231,6 +231,10 @@ struct FullScreenPlayer: View {
                     Button("Retry channel") {
                         if let channel = playback.channel { Task { await playback.play(channel, library: library, keepingScope: true) } }
                     }.buttonStyle(CinemaButtonStyle(prominent: true))
+                    HStack(spacing: 24) {
+                        Button("Previous channel") { Task { await playback.zap(-1, library: library) } }
+                        Button("Next channel") { Task { await playback.zap(1, library: library) } }
+                    }.buttonStyle(CinemaButtonStyle())
                     Button("Back to channels") { playback.isPresented = false }
                         .buttonStyle(CinemaButtonStyle())
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.background)
@@ -242,10 +246,11 @@ struct FullScreenPlayer: View {
             #endif
         }
         .overlay(alignment: .bottom) {
-            if playback.fallbackPlayer != nil && playback.error == nil {
+            if playback.usesFallbackSurface && playback.error == nil {
                 HStack(spacing: 24) {
                     Button("Previous channel") { Task { await playback.zap(-1, library: library) } }
                     Button(playback.isPaused ? "Resume playback" : "Pause playback") { playback.togglePause() }
+                        .disabled(playback.isLoading)
                     Button("Next channel") { Task { await playback.zap(1, library: library) } }
                     Button("Stop playback") { playback.stop() }
                 }.buttonStyle(CinemaButtonStyle()).padding()
