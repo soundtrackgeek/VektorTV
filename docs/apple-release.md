@@ -2,7 +2,14 @@
 
 ## Playback compatibility release — 0.8.0 (11)
 
-Version 0.8.0/build 11 adds an automatic VLC fallback for Apple-incompatible streams and shared Xtream offline-stream detection. Released Xcode 26.6 (17F113) is building both Release archives. Distribution is pending; no availability claim is made until both uploads complete Apple processing and appear as Testing in VektorTV Internal.
+**0.8.0 (11) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-11 at approximately **16:33 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
+
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.8.0 (11) | 2026-10-11 16:25:09 | Testing — VektorTV Internal | [iOS build 11](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/ea6a4731-fc46-4194-afb2-5b45365d9ca7) |
+| tvOS | 0.8.0 (11) | 2026-10-11 16:25:06 | Testing — VektorTV Internal | [tvOS build 11](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/e7acf496-940e-4a78-a423-a09fd1fd2241) |
+
+This release adds an automatic VLC fallback for Apple-incompatible streams and shared Xtream offline-stream detection. Both archive manifests confirm version 0.8.0/build 11 and include the final native/shared-core implementation and unmodified dynamic VLCKit framework. The final desktop HLS-status adjustment does not change the Apple archives. The libSystem clock linkage guard passed for both archives.
 
 Archives/exports: `apps/apple/build/0.8.0-11/`. Logs: `/tmp/vektortv-080-{archive,upload}-{ios,tvos}.log`. See [verification.md](verification.md) for provider diagnosis, runtime evidence and platform differences.
 
