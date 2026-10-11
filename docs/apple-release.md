@@ -1,5 +1,9 @@
 # Native Apple builds and TestFlight
 
+## Favorites release — 0.9.0 (12)
+
+Version 0.9.0/build 12 is configured for both native apps. Release archive, upload and VektorTV Internal processing verification are in progress; this entry does not claim availability. Results will be updated after Apple processing.
+
 ## Playback compatibility release — 0.8.0 (11)
 
 **0.8.0 (11) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-11 at approximately **16:33 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.

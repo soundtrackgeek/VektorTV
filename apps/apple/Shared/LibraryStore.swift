@@ -158,6 +158,26 @@ final class LibraryStore {
             if account == accountGeneration { countries = updated }
         } catch { message = error.localizedDescription }
     }
+    func moveFavorite(_ id: String, targetId: String, before: Bool) async -> Bool {
+        let generation = queryGeneration
+        do {
+            let _: Bool = try await call(CoreRequest(command: "moveFavorite", id: id, targetId: targetId, before: before))
+            // Keep the loaded pages so arranging a later page does not jump back.
+            if generation == queryGeneration, section == .favorites,
+               let source = channels.firstIndex(where: { $0.id == id }) {
+                let moved = channels.remove(at: source)
+                if let target = channels.firstIndex(where: { $0.id == targetId }) {
+                    channels.insert(moved, at: target + (before ? 0 : 1))
+                } else { channels.insert(moved, at: source) }
+            }
+            return true
+        } catch { message = error.localizedDescription; return false }
+    }
+    func openFavorites() {
+        clearCountry()
+        section = .favorites
+        channels = []
+    }
     func openCountry(_ country: Country, group: String?) {
         countryCode = country.code
         self.group = group

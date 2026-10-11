@@ -4,6 +4,7 @@ private enum WorkspaceTab: String, CaseIterable {
     case watch = "Watch"
     case guide = "TV Guide"
     case countries = "Countries"
+    case favorites = "Favorites"
 }
 
 struct RootView: View {
@@ -62,6 +63,10 @@ struct RootView: View {
         }
         .fullScreenCover(isPresented: $playback.isPresented) {
             FullScreenPlayer(playback: playback, library: library)
+        }
+        .onChange(of: library.section) { _, section in
+            if tab == .favorites && section != .favorites { tab = .watch }
+            else if tab == .watch && section == .favorites { tab = .favorites }
         }
         .onChange(of: library.hasAccount) { _, connected in
             if !connected { settingsPresented = false; guideChannel = nil }
@@ -131,7 +136,7 @@ struct RootView: View {
                 } else {
                     channelBrowser(wide: false)
                 }
-                if tab != .watch, playback.channel != nil {
+                if tab != .watch && tab != .favorites, playback.channel != nil {
                     NowPlayingBar(playback: playback) { tab = .watch }
                 }
             }
@@ -169,7 +174,7 @@ struct RootView: View {
                 .buttonStyle(CinemaButtonStyle())
                 .accessibilityLabel("Settings")
             }
-            if !wide { navigationTabs }
+            if !wide { ScrollView(.horizontal) { navigationTabs }.scrollIndicators(.hidden) }
         }
         .padding(.horizontal, Theme.pageInset)
         .padding(.vertical, Theme.headerInset)
@@ -181,17 +186,21 @@ struct RootView: View {
     private var navigationTabs: some View {
         HStack(spacing: 4) {
             ForEach(WorkspaceTab.allCases, id: \.self) { item in
-                Button { tab = item } label: {
+                Button {
+                    if item == .favorites { library.openFavorites() }
+                    else if item == .watch && library.section == .favorites { library.section = .live }
+                    tab = item
+                } label: {
                     Text(item.rawValue)
                         .font(Theme.controlFont)
                         .foregroundStyle(tab == item ? Theme.text : Theme.muted)
-                        .padding(.horizontal, 10).padding(.vertical, 12)
+                        .padding(.horizontal, 6).padding(.vertical, 12)
                         .overlay(alignment: .bottom) {
                             Capsule().fill(tab == item ? Theme.accent : .clear).frame(height: 3)
                                 .padding(.horizontal, 16)
                         }
                 }
-                .buttonStyle(CinemaButtonStyle())
+                .buttonStyle(CinemaButtonStyle(horizontalInset: 2))
                 .accessibilityAddTraits(tab == item ? .isSelected : [])
             }
         }

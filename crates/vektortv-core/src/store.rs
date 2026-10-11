@@ -26,6 +26,20 @@ impl Store {
             CREATE TABLE IF NOT EXISTS country_favourites (country_code TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS channel_sort (channel_id TEXT PRIMARY KEY,sort_name TEXT NOT NULL);
             PRAGMA user_version=2;")?;
+        // Upgrade existing favorites in provider order once, then retain their
+        // independent order through catalog refreshes and app restarts.
+        let has_position = connection
+            .prepare("PRAGMA table_info(favourites)")?
+            .query_map([], |row| row.get::<_, String>(1))?
+            .collect::<std::result::Result<Vec<_>, _>>()?
+            .iter()
+            .any(|name| name == "position");
+        if !has_position {
+            let tx = connection.transaction()?;
+            tx.execute_batch("ALTER TABLE favourites ADD COLUMN position INTEGER NOT NULL DEFAULT 0;
+                UPDATE favourites SET position=COALESCE((SELECT position FROM channels WHERE id=channel_id), (SELECT COUNT(*) FROM channels)+rowid);")?;
+            tx.commit()?;
+        }
         connection.execute_batch("CREATE VIRTUAL TABLE IF NOT EXISTS programme_search USING fts5(title,description,category,content='programmes',content_rowid='rowid',tokenize='unicode61 remove_diacritics 2');
             CREATE TRIGGER IF NOT EXISTS programme_search_insert AFTER INSERT ON programmes BEGIN
                 INSERT INTO programme_search(rowid,title,description,category) VALUES(new.rowid,new.title,new.description,new.category);
@@ -313,6 +327,8 @@ impl Store {
         )?;
         let order = if query.history_only {
             "h.watched_at DESC,c.position"
+        } else if query.favorites_only {
+            "f.position,c.position,c.id"
         } else if query.alphabetical {
             "s.sort_name,c.name,c.id"
         } else {
@@ -440,11 +456,42 @@ impl Store {
         self.channel(id)?;
         if favorite {
             self.connection
-                .execute("INSERT OR IGNORE INTO favourites VALUES (?1)", [id])?;
+                .execute("INSERT OR IGNORE INTO favourites(channel_id,position) SELECT ?1,COALESCE(MAX(position),-1)+1 FROM favourites", [id])?;
         } else {
             self.connection
                 .execute("DELETE FROM favourites WHERE channel_id=?1", [id])?;
         }
+        Ok(())
+    }
+    /// Move relative to a saved favorite, so filtered/paginated clients never
+    /// overwrite the order of favorites they have not loaded.
+    pub fn move_favorite(&mut self, id: &str, target_id: &str, before: bool) -> Result<()> {
+        self.channel(id)?;
+        self.channel(target_id)?;
+        let tx = self.connection.transaction()?;
+        let mut ids = tx
+            .prepare("SELECT channel_id FROM favourites ORDER BY position,channel_id")?
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        let source = ids
+            .iter()
+            .position(|value| value == id)
+            .ok_or_else(|| Error::Invalid("Only favorite channels can be arranged.".into()))?;
+        if !ids.iter().any(|value| value == target_id) {
+            return Err(Error::Invalid(
+                "The destination is no longer a favorite.".into(),
+            ));
+        }
+        if id != target_id {
+            let moved = ids.remove(source);
+            let target = ids.iter().position(|value| value == target_id).unwrap();
+            ids.insert(target + usize::from(!before), moved);
+            let mut update = tx.prepare("UPDATE favourites SET position=?1 WHERE channel_id=?2")?;
+            for (position, channel_id) in ids.iter().enumerate() {
+                update.execute(params![position, channel_id])?;
+            }
+        }
+        tx.commit()?;
         Ok(())
     }
     pub fn watched(&self, id: &str, now: i64) -> Result<()> {
@@ -519,6 +566,88 @@ mod tests {
             },
         ]
     }
+    #[test]
+    fn favorite_order_migrates_and_survives_restart_refresh_and_filtered_moves() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("favorites.db");
+        let mut catalog = channels();
+        for (id, name) in [("c", "Third"), ("d", "Fourth")] {
+            let mut channel = catalog[0].clone();
+            channel.id = id.into();
+            channel.name = name.into();
+            catalog.push(channel);
+        }
+        {
+            let mut store = Store::open(&path).unwrap();
+            store.replace_channels(&catalog, 0).unwrap();
+            // Simulate the previously shipped one-column favorites table.
+            store
+                .connection
+                .execute_batch(
+                    "DROP TABLE favourites; CREATE TABLE favourites(channel_id TEXT PRIMARY KEY);
+                INSERT INTO favourites VALUES ('d'),('c'),('b'),('a');",
+                )
+                .unwrap();
+        }
+        let query = ChannelQuery {
+            favorites_only: true,
+            alphabetical: true,
+            ..Default::default()
+        };
+        let ids = |store: &Store, query: &ChannelQuery| {
+            store
+                .list(query, 0)
+                .unwrap()
+                .channels
+                .into_iter()
+                .map(|c| c.channel.id)
+                .collect::<Vec<_>>()
+        };
+        {
+            let mut store = Store::open(&path).unwrap();
+            assert_eq!(ids(&store, &query), ["a", "b", "c", "d"]);
+            store.move_favorite("d", "a", true).unwrap();
+            assert_eq!(ids(&store, &query), ["d", "a", "b", "c"]);
+            assert_eq!(
+                ids(
+                    &store,
+                    &ChannelQuery {
+                        group: Some("Nordic".into()),
+                        ..query.clone()
+                    }
+                ),
+                ["d", "a", "c"]
+            );
+            store.move_favorite("c", "d", true).unwrap();
+            assert_eq!(ids(&store, &query), ["c", "d", "a", "b"]);
+            assert_eq!(
+                ids(
+                    &store,
+                    &ChannelQuery {
+                        offset: 1,
+                        limit: Some(2),
+                        ..query.clone()
+                    }
+                ),
+                ["d", "a"]
+            );
+            assert!(store.move_favorite("missing", "a", true).is_err());
+            store.favorite("d", false).unwrap();
+            assert!(store.move_favorite("c", "d", false).is_err());
+            assert_eq!(ids(&store, &query), ["c", "a", "b"]);
+            store.favorite("d", true).unwrap();
+            store.favorite("c", true).unwrap(); // Idempotent favoriting retains its position.
+            store.move_favorite("c", "d", false).unwrap();
+            assert_eq!(ids(&store, &query), ["a", "b", "d", "c"]);
+            store.move_favorite("a", "a", true).unwrap();
+            catalog.reverse();
+            store.replace_channels(&catalog, 1).unwrap();
+        }
+        let store = Store::open(&path).unwrap();
+        assert_eq!(ids(&store, &query), ["a", "b", "d", "c"]);
+        assert_eq!(ids(&store, &ChannelQuery::default()), ["d", "c", "b", "a"]);
+    }
+
     #[test]
     fn full_guide_freshness_is_independent_of_channels_and_short_epg() {
         let mut store = Store::open(":memory:").unwrap();

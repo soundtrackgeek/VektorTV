@@ -85,6 +85,25 @@ const channels: Channel[] = names.map((name, i) => ({
     category: "",
   },
 }));
+const previewFavoritesKey = "vektortv.preview.favorites.v1";
+let previewFavoriteOrder = channels.filter((c) => c.favorite).map((c) => c.id);
+if (demo) {
+  try {
+    const saved: unknown = JSON.parse(
+      localStorage.getItem(previewFavoritesKey) || "null",
+    );
+    if (Array.isArray(saved) && saved.every((id) => typeof id === "string")) {
+      previewFavoriteOrder = [...new Set(saved)].filter((id) =>
+        channels.some((c) => c.id === id),
+      );
+      channels.forEach((c) => {
+        c.favorite = previewFavoriteOrder.includes(c.id);
+      });
+    }
+  } catch {
+    /* A damaged preview preference must not prevent rendering. */
+  }
+}
 const demoCountryDefinitions = [
   {
     code: "no",
@@ -144,7 +163,7 @@ const previewInfo: AppInfo = {
   playerAvailable: true,
   playerError: null,
   progress: { phase: "", active: false, message: "" },
-  version: "0.8.0",
+  version: "0.9.0",
   platform: "preview",
   credentialStorage: "the operating system credential store",
 };
@@ -211,7 +230,13 @@ export const api = {
             (!query.historyOnly || c.lastWatched),
         )
       : [];
-    if (query.alphabetical)
+    if (query.favoritesOnly)
+      result.sort(
+        (a, b) =>
+          previewFavoriteOrder.indexOf(a.id) -
+          previewFavoriteOrder.indexOf(b.id),
+      );
+    else if (query.alphabetical)
       result.sort(
         (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
       );
@@ -315,8 +340,45 @@ export const api = {
     if (native) return invoke<void>("set_favorite", { channelId, favorite });
     if (demo) {
       const c = channels.find((c) => c.id === channelId);
-      if (c) c.favorite = favorite;
+      if (c) {
+        c.favorite = favorite;
+        previewFavoriteOrder = previewFavoriteOrder.filter(
+          (id) => id !== channelId,
+        );
+        if (favorite) previewFavoriteOrder.push(channelId);
+        localStorage.setItem(
+          previewFavoritesKey,
+          JSON.stringify(previewFavoriteOrder),
+        );
+      }
     }
+  },
+  moveFavorite: async (
+    channelId: string,
+    targetId: string,
+    before: boolean,
+  ) => {
+    if (native)
+      return invoke<void>("move_favorite", { channelId, targetId, before });
+    if (!demo) return desktopRequired();
+    if (
+      !previewFavoriteOrder.includes(channelId) ||
+      !previewFavoriteOrder.includes(targetId)
+    )
+      throw new Error("Only favorite channels can be arranged.");
+    if (channelId === targetId) return;
+    previewFavoriteOrder = previewFavoriteOrder.filter(
+      (id) => id !== channelId,
+    );
+    previewFavoriteOrder.splice(
+      previewFavoriteOrder.indexOf(targetId) + Number(!before),
+      0,
+      channelId,
+    );
+    localStorage.setItem(
+      previewFavoritesKey,
+      JSON.stringify(previewFavoriteOrder),
+    );
   },
   save: (connection: Connection) =>
     native

@@ -228,6 +228,18 @@ pub fn set_favorite(state: State<'_, AppState>, channel_id: String, favorite: bo
 }
 
 #[tauri::command]
+pub fn move_favorite(
+    state: State<'_, AppState>,
+    channel_id: String,
+    target_id: String,
+    before: bool,
+) -> Result<()> {
+    lock(&state.store)?
+        .move_favorite(&channel_id, &target_id, before)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn save_connection(app: AppHandle, connection: Connection) -> Result<()> {
     let state = app.state::<AppState>();
     if state.syncing.load(Ordering::SeqCst) {

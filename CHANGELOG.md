@@ -2,6 +2,20 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.9.0] - 2026-10-11
+
+### Added
+
+- A Favorites shortcut in the top bar on Windows, macOS, iPhone, iPad and Apple TV, opening all saved channels without leftover search/group/country filters.
+- Persistent Favorite channel order in the shared core, with automatic migration of existing favorites and new favorites appended at the end.
+- Hold-and-release arrangement: desktop pointer preview and single-click drop, Apple TV remote up/down and Select to drop, and touch/keyboard move controls with Drop and Cancel.
+
+### Changed
+
+- Favorites keep their saved order through filtering, pagination, catalog refreshes and restarts. Relative moves preserve favorites outside the visible subset and do not tune a channel.
+- Keep loaded channel pages after arranging; support edge scrolling and explicit loading for longer lists.
+- Align desktop and native Apple versions at 0.9.0; increment the Apple build to 12. iPhone/iPad use touch move controls instead of desktop pointer hover.
+
 ## [0.8.0] - 2026-10-11
 
 ### Added

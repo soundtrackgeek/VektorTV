@@ -71,6 +71,7 @@ fn main() {
             commands::guide_schedules,
             commands::search_programmes,
             commands::set_favorite,
+            commands::move_favorite,
             commands::save_connection,
             commands::disconnect,
             commands::sync_library,

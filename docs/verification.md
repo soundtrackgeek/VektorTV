@@ -1,5 +1,11 @@
 # Verification
 
+## Favorites shortcut and arrangement — 0.9.0 (12)
+
+Verification in progress on 2026-10-11. Frontend lint, TypeScript/production build, all four frontend unit tests and all 24 core/Apple bridge tests passed. The storage regression covers migration, filtered/paginated moves, invalid destinations, refavoriting, catalog refresh and restart. Desktop browser hold/release → pointer preview → single-click drop → reload passed at 1440 × 950; Cancel preserved the saved order and ordinary channel selection still worked. Console has zero warnings/errors. Browser plugin unavailable; used Playwright CLI against `http://127.0.0.1:1437/?demo=1` with illustrative data. Screenshots: `/tmp/vektortv-090-favorites-{moving,mobile}.png`. iPhone and Apple TV integration tests passed hold/release, move/drop without playback, Cancel and restart persistence. The tests used two temporary Favorites from each simulator's existing real provider catalog; original Favorite data will be restored. The local Mac app and ARM64 disk image built, and deep/strict signature verification passed. Computer Use returned `-10005: timeoutReached` when acquiring the packaged Mac app; fresh native Mac interaction verification remains blocked. iPad, Windows CI, final Apple archives and TestFlight processing are in progress.
+
+Platform differences: iPhone/iPad use touch move buttons and a destination tap; Apple TV uses held Select, remote up/down and Select to drop; desktop uses pointer hover, edge scrolling and keyboard arrows/Enter/Escape. All persist relative moves in the same SQLite core. Favorites remain local and tvOS cache reclamation can remove them.
+
 ## Playback compatibility — 0.8.0 (11)
 
 Checks on 2026-10-11 using released Xcode 26.6 (17F113):

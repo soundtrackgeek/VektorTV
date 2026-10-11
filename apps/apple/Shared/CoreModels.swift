@@ -75,6 +75,8 @@ struct CoreRequest: Encodable, Sendable {
     var programmeQuery: ProgrammeQuery?
     var id: String?
     var favorite: Bool?
+    var targetId: String?
+    var before: Bool?
 }
 struct AppFailure: LocalizedError, Sendable {
     let message: String

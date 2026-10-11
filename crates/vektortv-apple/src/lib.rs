@@ -62,6 +62,12 @@ enum Request {
         id: String,
         favorite: bool,
     },
+    MoveFavorite {
+        id: String,
+        #[serde(rename = "targetId")]
+        target_id: String,
+        before: bool,
+    },
     Watched {
         id: String,
     },
@@ -284,6 +290,14 @@ impl AppleCore {
             }
             Request::Favorite { id, favorite } => {
                 self.state()?.store.favorite(&id, favorite)?;
+                Ok(json!(true))
+            }
+            Request::MoveFavorite {
+                id,
+                target_id,
+                before,
+            } => {
+                self.state()?.store.move_favorite(&id, &target_id, before)?;
                 Ok(json!(true))
             }
             Request::Watched { id } => {

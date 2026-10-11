@@ -308,6 +308,42 @@ svg {
   min-width: 0;
   border-radius: 5px;
 }
+.favorite-arrangement {
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.favorite-arrangement p {
+  margin: 0;
+  line-height: 1.5;
+}
+.arrangement-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.arrangement-actions > button {
+  min-height: 36px;
+}
+.channel-row.is-moving {
+  background: #21c7b51a;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.channel-row.is-moving .channel-select {
+  cursor: grabbing;
+}
+.favorite-move {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.main-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .channel-logo {
   position: relative;
   display: grid;
@@ -1232,7 +1268,7 @@ svg {
     grid-row: 2;
     justify-content: center;
     height: 54px;
-    gap: 38px;
+    gap: 14px;
   }
   .header-actions {
     gap: 5px;

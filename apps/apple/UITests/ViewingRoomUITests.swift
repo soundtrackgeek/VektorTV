@@ -57,6 +57,62 @@ final class ViewingRoomUITests: XCTestCase {
         capture("Returned to channels after stop")
     }
 
+    func testFavoritesShortcutArrangementAndRestart() throws {
+        activate(app.buttons["Favorites"])
+        let rows = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch '"))
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15))
+        try XCTSkipUnless(rows.count >= 2, "Save at least two Favorites in the simulator before this integration check.")
+        let original = rows.allElementsBoundByIndex.map(\.label)
+        let firstName = String(original[0].dropFirst("Watch ".count))
+        let first = app.buttons[original[0]]
+        #if os(tvOS)
+        focus(first)
+        XCUIRemote.shared.press(.select, forDuration: 0.7)
+        #else
+        first.press(forDuration: 0.7)
+        #endif
+        let status = app.staticTexts["favorite-arrangement-status"]
+        XCTAssertTrue(status.waitForExistence(timeout: 10), "Hold and release must pick up the Favorite")
+        #if os(tvOS)
+        XCUIRemote.shared.press(.down)
+        XCUIRemote.shared.press(.select)
+        #else
+        activate(app.buttons["Move favorite down"])
+        activate(app.buttons["Drop"])
+        #endif
+        XCTAssertTrue(status.waitForNonExistence(timeout: 10))
+        var expected = original
+        expected.swapAt(0, 1)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map(\.label), expected)
+        XCTAssertFalse(app.buttons["Stop playback"].exists, "Arranging must not start playback")
+        capture("Favorites arranged")
+        app.terminate()
+        app.launch()
+        activate(app.buttons["Favorites"])
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15))
+        XCTAssertEqual(rows.allElementsBoundByIndex.map(\.label), expected, "Favorite order must survive restart")
+        // Restore the prior order and prove Cancel discards a preview.
+        activate(app.buttons["Arrange \(firstName)"])
+        #if os(tvOS)
+        XCUIRemote.shared.press(.up)
+        XCUIRemote.shared.press(.menu)
+        #else
+        activate(app.buttons["Move favorite up"])
+        activate(app.buttons["Cancel"])
+        #endif
+        XCTAssertEqual(rows.allElementsBoundByIndex.map(\.label), expected)
+        activate(app.buttons["Arrange \(firstName)"])
+        #if os(tvOS)
+        XCUIRemote.shared.press(.up)
+        XCUIRemote.shared.press(.select)
+        #else
+        activate(app.buttons["Move favorite up"])
+        activate(app.buttons["Drop"])
+        #endif
+        XCTAssertTrue(status.waitForNonExistence(timeout: 10))
+        XCTAssertEqual(rows.allElementsBoundByIndex.map(\.label), original)
+    }
+
     /// Opt-in provider regression checks: availability is intentionally a live
     /// service observation, not a permanent assertion about these channel names.
     func testReportedPlaybackChannels() throws {

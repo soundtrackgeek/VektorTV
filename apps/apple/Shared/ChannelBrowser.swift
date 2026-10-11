@@ -10,6 +10,49 @@ struct ChannelBrowser: View {
     let selectedGuideID: String?
     let schedule: (Channel) -> Void
     @FocusState private var searchFocused: Bool
+    @FocusState private var channelFocus: String?
+    @State private var movingID: String?
+    @State private var draftOrder: [String] = []
+    @State private var savingOrder = false
+
+    private var visibleChannels: [Channel] {
+        guard movingID != nil else { return library.channels }
+        let byID = Dictionary(uniqueKeysWithValues: library.channels.map { ($0.id, $0) })
+        let ordered = Set(draftOrder)
+        return draftOrder.compactMap { byID[$0] } + library.channels.filter { !ordered.contains($0.id) }
+    }
+    private func pickUp(_ channel: Channel) {
+        guard !library.isLoading, !savingOrder else { return }
+        searchFocused = false
+        draftOrder = library.channels.map(\.id)
+        movingID = channel.id
+        channelFocus = channel.id
+    }
+    private func move(to targetID: String) {
+        guard let movingID, !savingOrder else { return }
+        var ids = visibleChannels.map(\.id)
+        guard let source = ids.firstIndex(of: movingID), let target = ids.firstIndex(of: targetID) else { return }
+        ids.remove(at: source)
+        ids.insert(movingID, at: target)
+        draftOrder = ids
+    }
+    private func step(_ direction: Int) {
+        let ids = visibleChannels.map(\.id)
+        guard let movingID, let index = ids.firstIndex(of: movingID), ids.indices.contains(index + direction) else { return }
+        move(to: ids[index + direction])
+    }
+    private func cancelMove() { movingID = nil; draftOrder = [] }
+    private func drop() {
+        guard let movingID, !savingOrder else { return }
+        let ids = visibleChannels.map(\.id)
+        guard let index = ids.firstIndex(of: movingID), ids.count > 1 else { cancelMove(); return }
+        let targetID = ids[index == 0 ? 1 : index - 1]
+        savingOrder = true
+        Task {
+            if await library.moveFavorite(movingID, targetId: targetID, before: index == 0) { cancelMove() }
+            savingOrder = false
+        }
+    }
 
     var body: some View {
         ScrollViewReader { scroll in
@@ -33,12 +76,20 @@ struct ChannelBrowser: View {
                                 ContentUnavailableView("No channels here", systemImage: library.section.symbol,
                                     description: Text(library.section == .favorites ? "Save a channel with its star or channel menu." : "Try another search or channel group."))
                             }
-                            ForEach(library.channels) { channel in
+                            ForEach(visibleChannels) { channel in
                                 ChannelRow(channel: channel,
                                     selected: guide ? selectedGuideID == channel.id : playback.channel?.id == channel.id,
                                     guide: guide,
+                                    moving: movingID == channel.id,
+                                    arranging: movingID != nil,
                                     select: {
-                                        if guide { schedule(channel) }
+                                        if movingID != nil {
+                                            #if os(iOS)
+                                            move(to: channel.id)
+                                            #endif
+                                            drop()
+                                        }
+                                        else if guide { schedule(channel) }
                                         else {
                                             searchFocused = false
                                             Task { await playback.play(channel, library: library) }
@@ -52,7 +103,21 @@ struct ChannelBrowser: View {
                                         }
                                     },
                                     schedule: { schedule(channel) },
-                                    onFocus: { scroll.scrollTo(channel.id, anchor: .center) })
+                                    arrange: library.section == .favorites && movingID == nil ? { pickUp(channel) } : nil,
+                                    focus: $channelFocus,
+                                    onFocus: {
+                                        #if os(tvOS)
+                                        if let movingID, channel.id != movingID {
+                                            move(to: channel.id)
+                                            Task { @MainActor in
+                                                await Task.yield()
+                                                channelFocus = movingID
+                                            }
+                                        }
+                                        #endif
+                                        scroll.scrollTo(movingID ?? channel.id, anchor: .center)
+                                    })
+                                    .disabled(savingOrder)
                             }
                             if library.channels.count < library.total {
                                 Button { Task { await library.reload(more: true) } } label: {
@@ -73,7 +138,11 @@ struct ChannelBrowser: View {
                         #endif
                     }
                     .onChange(of: queryKey) { _, _ in
+                        cancelMove()
                         scroll.scrollTo(wide ? "channels-start" : "browser-controls", anchor: .top)
+                    }
+                    .onChange(of: draftOrder) { _, _ in
+                        if let movingID { withAnimation { scroll.scrollTo(movingID, anchor: .center) } }
                     }
                     .onChange(of: playback.channel?.id) { _, selected in
                         guard !wide, !guide, selected != nil else { return }
@@ -85,6 +154,10 @@ struct ChannelBrowser: View {
                 }
             }
         }
+        .onDisappear { if !savingOrder { cancelMove() } }
+        #if os(tvOS)
+        .onExitCommand(perform: movingID == nil ? nil : { if !savingOrder { cancelMove() } })
+        #endif
     }
 
     private var browserControls: some View {
@@ -133,6 +206,24 @@ struct ChannelBrowser: View {
                 HStack(spacing: 8) { sectionPicker; groupPicker }
                 VStack(alignment: .leading, spacing: 8) { sectionPicker; groupPicker }
             }
+            if library.section == .favorites {
+                if let movingID, let channel = visibleChannels.first(where: { $0.id == movingID }) {
+                    Text("Moving \(channel.name). Move up/down, then select to drop.")
+                        .font(Theme.detailFont).foregroundStyle(Theme.accent)
+                        .accessibilityIdentifier("favorite-arrangement-status")
+                    HStack(spacing: 10) {
+                        Button { step(-1) } label: { Image(systemName: "arrow.up") }
+                            .accessibilityLabel("Move favorite up").disabled(visibleChannels.first?.id == movingID)
+                        Button { step(1) } label: { Image(systemName: "arrow.down") }
+                            .accessibilityLabel("Move favorite down").disabled(visibleChannels.last?.id == movingID)
+                        Button(savingOrder ? "Saving…" : "Drop", action: drop)
+                        Button("Cancel", action: cancelMove)
+                    }.buttonStyle(CinemaButtonStyle()).font(Theme.detailFont).disabled(savingOrder)
+                } else {
+                    Text("Hold a channel to arrange Favorites, or use its move button.")
+                        .font(Theme.detailFont).foregroundStyle(Theme.muted)
+                }
+            }
         }
         .padding(.horizontal, wide ? Theme.contentInset : 0)
         .padding(.top, Theme.contentInset)
@@ -166,13 +257,32 @@ private struct ChannelRow: View {
     let channel: Channel
     let selected: Bool
     let guide: Bool
+    let moving: Bool
+    let arranging: Bool
     let select: () -> Void
     let favorite: () -> Void
     let schedule: () -> Void
+    let arrange: (() -> Void)?
+    let focus: FocusState<String?>.Binding
     let onFocus: () -> Void
-    @FocusState private var focused: Bool
 
     var body: some View {
+        HStack(spacing: 0) {
+            row
+            if let arrange {
+                Button(action: arrange) { Image(systemName: "line.3.horizontal").padding(8) }
+                    .buttonStyle(CinemaButtonStyle()).accessibilityLabel("Arrange \(channel.name)")
+                    .contextMenu {
+                        Button("Remove from favorites", systemImage: "star.slash", action: favorite)
+                        Button("Programme guide", systemImage: "calendar", action: schedule)
+                    }
+            }
+        }
+        .background(moving ? Theme.accent.opacity(0.15) : .clear)
+        .overlay { RoundedRectangle(cornerRadius: 8).stroke(moving ? Theme.accent : .clear, lineWidth: 2) }
+    }
+
+    private var row: some View {
         Button(action: select) {
             HStack(spacing: 14) {
                 ChannelLogo(channel: channel)
@@ -199,17 +309,21 @@ private struct ChannelRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(ChannelRowStyle())
-        .focused($focused)
-        .onChange(of: focused) { _, focused in if focused { onFocus() } }
+        .focused(focus, equals: channel.id)
+        .onChange(of: focus.wrappedValue) { _, focused in if focused == channel.id { onFocus() } }
+        .highPriorityGesture(arrange == nil ? nil : LongPressGesture(minimumDuration: 0.45).onEnded { _ in arrange?() })
         .contextMenu {
+            if arrange == nil && !arranging {
             Button(channel.favorite ? "Remove from favorites" : "Add to favorites", systemImage: channel.favorite ? "star.slash" : "star", action: favorite)
             Button("Programme guide", systemImage: "calendar", action: schedule)
+            }
         }
-        .accessibilityLabel("\(guide ? "Programme guide for" : "Watch") \(channel.name)")
+        .accessibilityLabel("\(arranging ? "Drop at" : guide ? "Programme guide for" : "Watch") \(channel.name)")
         .accessibilityValue(channel.now?.title ?? "Programme information unavailable")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityAction(named: channel.favorite ? "Remove from favorites" : "Add to favorites", favorite)
         .accessibilityAction(named: "Programme guide", schedule)
+        .accessibilityAction(named: "Arrange favorite") { arrange?() }
     }
 }
 

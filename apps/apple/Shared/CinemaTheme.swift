@@ -2,19 +2,21 @@ import SwiftUI
 
 struct CinemaButtonStyle: ButtonStyle {
     var prominent = false
+    var horizontalInset: CGFloat = 10
     func makeBody(configuration: Configuration) -> some View {
-        CinemaButtonBody(configuration: configuration, prominent: prominent)
+        CinemaButtonBody(configuration: configuration, prominent: prominent, horizontalInset: horizontalInset)
     }
 }
 
 private struct CinemaButtonBody: View {
     let configuration: ButtonStyleConfiguration
     let prominent: Bool
+    let horizontalInset: CGFloat
     @Environment(\.isFocused) private var focused
     @Environment(\.isEnabled) private var enabled
     var body: some View {
         configuration.label
-            .padding(.horizontal, prominent ? 18 : 10)
+            .padding(.horizontal, prominent ? 18 : horizontalInset)
             .padding(.vertical, 10)
             .frame(minWidth: 44, minHeight: 44)
             .foregroundStyle(prominent ? Theme.background : Theme.text)
@@ -56,4 +58,3 @@ struct StatusBanner: View {
         }.padding(Theme.contentInset).background(Color.orange.opacity(0.1))
     }
 }
-

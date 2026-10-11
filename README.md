@@ -2,14 +2,14 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI, AVKit/AVPlayer and an automatic VLCKit playback fallback. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.8.0
+## Features in 0.9.0
 
 The Tauri desktop client includes:
 
 - Xtream account login or an HTTP M3U/M3U Plus playlist, with optional XMLTV guide.
 - Embedded VLC playback, including MPEG-TS and HLS, with pause/resume, stop, volume and fullscreen.
 - A dedicated Countries section with bundled SVG flags, country tiles, favorite countries pinned first, country groups and an **All channels A–Z** action on every platform.
-- Search and group filtering, paginated channel browsing, persistent favorites and viewing history.
+- Search and group filtering, paginated channel browsing, persistent ordered favorites and viewing history.
 - Now/next programmes, upcoming schedules and a continuously scrolling three-hour EPG grid with a sticky time ruler. Double-click a programme to tune its channel live. All programme times display in the computer's local time.
 - Programme search across every imported guide, with time, country, provider-group and favorite-channel filters on desktop, iPhone, iPad and Apple TV.
 - SQLite metadata cache; successful channel imports become available while the guide continues loading. A failed import retains the previous snapshot.
@@ -30,6 +30,14 @@ The app supplies no channels or subscription. Use your own authorized service. M
 **The provider returned an ended stream** means the live endpoint supplied a finished clip rather than an ongoing broadcast. Some providers use a black, silent clip as their offline response. Retry later or select a different variant of that channel; changing decoders cannot create the missing broadcast.
 
 Apple devices automatically retry failed or pictureless AVPlayer startup with VLC. **No picture or sound for 30 seconds** means that decoding did not start or the stream stalled. Retry the channel, check your connection, or choose another channel. Errors omit authenticated stream addresses and account values.
+
+## Favorites and channel order
+
+Choose **Favorites** in the top bar on Windows, macOS, iPhone, iPad or Apple TV to open all saved channels, clearing country, group and search filters. Favorites use your saved order; new favorites go at the end. Order survives app restarts and catalog refreshes and is local to each device (subject to tvOS cache reclamation).
+
+On desktop, **press and hold a Favorite for about half a second, then release**. Move the pointer up/down the list to preview its position; a **single click drops and saves it**. The list scrolls near its edges, and you can load more channels while arranging. **Cancel** or Escape discards the preview. The move button beside each Favorite also picks it up; use up/down buttons or keyboard arrows, then Drop or Enter. Ordinary channel clicks still start playback.
+
+On iPhone/iPad, hold and release a Favorite or tap its move button, use **Move favorite up/down**, then **Drop**, or tap a destination channel to place it there. On Apple TV, hold Select on a Favorite, release, move up/down with the remote, then press Select once to drop. Move buttons and Cancel are also available. Favorites' move buttons retain the remove-favorite and programme-guide context menu; long-pressing channels outside Favorites retains the normal channel menu. Arranging does not start or interrupt playback. Filtered moves preserve the relative order of other Favorites; country A–Z browsing and viewing history keep their own sort order.
 
 ## Browse by country
 

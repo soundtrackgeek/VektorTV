@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Play,
   Square,
+  Star,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -490,6 +491,12 @@ export default function App() {
     play,
   ]);
   const go = (target: View) => {
+    if (target === "favorites") {
+      setCountryCode(null);
+      setGroup("");
+      setSearch("");
+      setDebouncedSearch("");
+    }
     setView(target);
     setError(null);
   };
@@ -511,15 +518,9 @@ export default function App() {
           <Brand />
           <nav className="main-tabs" aria-label="Main navigation">
             <button
-              className={
-                view !== "guide" && view !== "settings" && view !== "countries"
-                  ? "active"
-                  : ""
-              }
+              className={view === "live" || view === "history" ? "active" : ""}
               aria-current={
-                view !== "guide" && view !== "settings" && view !== "countries"
-                  ? "page"
-                  : undefined
+                view === "live" || view === "history" ? "page" : undefined
               }
               onClick={() => go("live")}
             >
@@ -538,6 +539,13 @@ export default function App() {
               onClick={() => go("countries")}
             >
               Countries
+            </button>
+            <button
+              className={view === "favorites" ? "active" : ""}
+              aria-current={view === "favorites" ? "page" : undefined}
+              onClick={() => go("favorites")}
+            >
+              <Star size={17} aria-hidden="true" /> Favorites
             </button>
           </nav>
           <div className="header-actions">
@@ -598,6 +606,7 @@ export default function App() {
       >
         {view !== "settings" && view !== "countries" && !playerOnly && (
           <ChannelBrowser
+            key={`${view}|${countryCode}|${group}`}
             channels={page.channels}
             groups={country?.groups ?? groups}
             country={country}
@@ -618,6 +627,30 @@ export default function App() {
             }}
             onFavorite={(c) => {
               void favorite(c);
+            }}
+            onMoveFavorite={async (id, targetId, before) => {
+              try {
+                await api.moveFavorite(id, targetId, before);
+                queries.current.next();
+                moreBusy.current = false;
+                setLoading(false);
+                setPage((current) => {
+                  const moved = current.channels.find((c) => c.id === id);
+                  if (
+                    !moved ||
+                    !current.channels.some((c) => c.id === targetId)
+                  )
+                    return current;
+                  const channels = current.channels.filter((c) => c.id !== id);
+                  const target = channels.findIndex((c) => c.id === targetId);
+                  channels.splice(target + Number(!before), 0, moved);
+                  return { ...current, channels };
+                });
+                return true;
+              } catch (e) {
+                setError(errorText(e));
+                return false;
+              }
             }}
             total={page.total}
             loading={loading}

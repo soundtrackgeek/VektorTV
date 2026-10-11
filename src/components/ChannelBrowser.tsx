@@ -8,8 +8,12 @@ import {
   X,
   History,
   Volume2,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { dropAnchor, moveInOrder } from "../favoriteOrder";
 import { CountryFlag } from "./CountryBrowser";
 import type { Channel, Country, Group, View } from "../types";
 
@@ -50,6 +54,11 @@ interface Props {
   selected: string | null;
   onSelect: (channel: Channel) => void;
   onFavorite: (channel: Channel) => void;
+  onMoveFavorite: (
+    id: string,
+    targetId: string,
+    before: boolean,
+  ) => Promise<boolean>;
   total: number;
   loading: boolean;
   onMore: () => void;
@@ -63,9 +72,123 @@ interface Props {
 }
 export default function ChannelBrowser(p: Props) {
   const listRef = useRef<HTMLDivElement>(null);
+  const [moving, setMoving] = useState<string | null>(null);
+  const [order, setOrder] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const hold = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressPoint = useRef<{ x: number; y: number } | null>(null);
+  const suppressClick = useRef(false);
+  const edgeSpeed = useRef(0);
+  useEffect(() => {
+    setMoving(null);
+    setOrder([]);
+    if (hold.current) clearTimeout(hold.current);
+    hold.current = null;
+    pressPoint.current = null;
+    suppressClick.current = false;
+  }, [p.search]);
+  const clearHold = () => {
+    if (hold.current) clearTimeout(hold.current);
+    hold.current = null;
+    pressPoint.current = null;
+  };
+  useEffect(
+    () => () => {
+      if (hold.current) clearTimeout(hold.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    const released = () => {
+      window.setTimeout(() => {
+        suppressClick.current = false;
+      }, 0);
+    };
+    window.addEventListener("pointerup", released);
+    return () => window.removeEventListener("pointerup", released);
+  }, []);
+  useEffect(() => {
+    if (!moving) return;
+    const timer = window.setInterval(() => {
+      if (edgeSpeed.current) listRef.current?.scrollBy(0, edgeSpeed.current);
+    }, 30);
+    return () => {
+      clearInterval(timer);
+      edgeSpeed.current = 0;
+    };
+  }, [moving]);
+  const byId = new Map(p.channels.map((channel) => [channel.id, channel]));
+  const visibleIds = moving
+    ? [
+        ...order.filter((id) => byId.has(id)),
+        ...p.channels.filter((c) => !order.includes(c.id)).map((c) => c.id),
+      ]
+    : p.channels.map((c) => c.id);
+  const displayed = visibleIds.map((id) => byId.get(id)!);
+  const picked = moving ? byId.get(moving) : undefined;
+  const pickUp = (id: string) => {
+    if (saving || p.loading) return;
+    setOrder(p.channels.map((c) => c.id));
+    setMoving(id);
+    requestAnimationFrame(() =>
+      listRef.current
+        ?.querySelector<HTMLButtonElement>(
+          `[data-channel-id="${CSS.escape(id)}"] .channel-select`,
+        )
+        ?.focus(),
+    );
+  };
+  const cancel = () => {
+    setMoving(null);
+    setOrder([]);
+    clearHold();
+    suppressClick.current = false;
+  };
+  const drop = async (ids = visibleIds) => {
+    if (!moving || saving) return;
+    const anchor = dropAnchor(ids, moving);
+    setSaving(true);
+    try {
+      if (
+        !anchor ||
+        (await p.onMoveFavorite(moving, anchor.targetId, anchor.before))
+      )
+        cancel();
+    } finally {
+      setSaving(false);
+    }
+  };
+  const step = (direction: number) => {
+    if (!moving || saving) return;
+    const target = visibleIds[visibleIds.indexOf(moving) + direction];
+    if (target) {
+      setOrder(moveInOrder(visibleIds, moving, target));
+      requestAnimationFrame(() =>
+        listRef.current
+          ?.querySelector(`[data-channel-id="${CSS.escape(moving)}"]`)
+          ?.scrollIntoView({ block: "nearest" }),
+      );
+    }
+  };
   const resetScroll = () => listRef.current?.scrollTo(0, 0);
   return (
-    <aside className="channel-browser" aria-label="Channel browser">
+    <aside
+      className="channel-browser"
+      aria-label="Channel browser"
+      onKeyDown={(event) => {
+        if (!moving) return;
+        if (
+          ["Escape", "ArrowUp", "ArrowDown", "Enter", " "].includes(event.key)
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (event.key === "Escape" && !saving) cancel();
+          else if (event.key === "ArrowUp") step(-1);
+          else if (event.key === "ArrowDown") step(1);
+          else if (event.key === "Enter" || event.key === " ") void drop();
+        }
+      }}
+    >
       {p.country && (
         <div className="country-scope">
           <button onClick={p.onCountries} aria-label="Back to countries">
@@ -179,9 +302,71 @@ export default function ChannelBrowser(p: Props) {
         </select>
         <ChevronDown size={16} />
       </div>
+      {p.view === "favorites" && (
+        <div className="favorite-arrangement">
+          <p role="status" aria-live="polite">
+            {picked
+              ? `Moving ${picked.name} · ${visibleIds.indexOf(picked.id) + 1} of ${visibleIds.length}. Move, then click to drop.`
+              : "Hold a channel to arrange Favorites, or use its move button."}
+          </p>
+          {picked && (
+            <div className="arrangement-actions">
+              <button
+                className="icon-button"
+                aria-label="Move favorite up"
+                disabled={saving || visibleIds[0] === moving}
+                onClick={() => step(-1)}
+              >
+                <ArrowUp size={17} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Move favorite down"
+                disabled={saving || visibleIds.at(-1) === moving}
+                onClick={() => step(1)}
+              >
+                <ArrowDown size={17} />
+              </button>
+              <button disabled={saving} onClick={() => void drop()}>
+                {saving ? "Saving…" : "Drop"}
+              </button>
+              <button disabled={saving} onClick={cancel}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       <div
         className="channel-list"
         ref={listRef}
+        onPointerLeave={() => {
+          clearHold();
+          edgeSpeed.current = 0;
+        }}
+        onPointerMove={(event) => {
+          if (!moving || saving || event.pointerType !== "mouse") return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          edgeSpeed.current =
+            event.clientY < bounds.top + 40
+              ? -10
+              : event.clientY > bounds.bottom - 40
+                ? 10
+                : 0;
+          const row = (event.target as HTMLElement).closest<HTMLElement>(
+            "[data-channel-id]",
+          );
+          const target = row?.dataset.channelId;
+          if (!row || !target || target === moving) return;
+          const rect = row.getBoundingClientRect();
+          const from = visibleIds.indexOf(moving),
+            to = visibleIds.indexOf(target);
+          if (
+            (to < from && event.clientY < rect.top + rect.height / 2) ||
+            (to > from && event.clientY > rect.top + rect.height / 2)
+          )
+            setOrder(moveInOrder(visibleIds, moving, target));
+        }}
         onScroll={(e) => {
           const el = e.currentTarget;
           if (
@@ -192,15 +377,58 @@ export default function ChannelBrowser(p: Props) {
             p.onMore();
         }}
       >
-        {p.channels.map((channel) => (
+        {displayed.map((channel) => (
           <div
-            className={`channel-row ${p.selected === channel.id ? "selected" : ""}`}
+            className={`channel-row ${p.selected === channel.id ? "selected" : ""} ${moving === channel.id ? "is-moving" : ""}`}
             key={channel.id}
+            data-channel-id={channel.id}
           >
             <button
               className="channel-select"
-              onClick={() => p.onSelect(channel)}
-              aria-label={`Watch ${channel.name}`}
+              disabled={saving}
+              onPointerDown={(event) => {
+                if (
+                  p.view !== "favorites" ||
+                  moving ||
+                  event.button !== 0 ||
+                  p.loading
+                )
+                  return;
+                suppressClick.current = false;
+                pressPoint.current = { x: event.clientX, y: event.clientY };
+                hold.current = setTimeout(() => {
+                  suppressClick.current = true;
+                  pickUp(channel.id);
+                  clearHold();
+                }, 450);
+              }}
+              onPointerMove={(event) => {
+                const point = pressPoint.current;
+                if (
+                  point &&
+                  Math.hypot(event.clientX - point.x, event.clientY - point.y) >
+                    8
+                )
+                  clearHold();
+              }}
+              onPointerUp={clearHold}
+              onPointerCancel={clearHold}
+              onPointerLeave={clearHold}
+              onContextMenu={(event) => {
+                if (p.view === "favorites") event.preventDefault();
+              }}
+              onClick={() => {
+                if (suppressClick.current) {
+                  suppressClick.current = false;
+                  return;
+                }
+                if (moving) {
+                  const next = moveInOrder(visibleIds, moving, channel.id);
+                  setOrder(next);
+                  void drop(next);
+                } else p.onSelect(channel);
+              }}
+              aria-label={`${moving ? "Drop at" : "Watch"} ${channel.name}`}
               aria-pressed={p.selected === channel.id}
             >
               <ChannelLogo channel={channel} />
@@ -216,6 +444,17 @@ export default function ChannelBrowser(p: Props) {
                 <Volume2 className="playing-mark" size={18} />
               )}
             </button>
+            {p.view === "favorites" && (
+              <button
+                className="icon-button favorite-move"
+                aria-label={`Arrange ${channel.name}`}
+                title="Arrange favorite (then use ↑/↓ and Enter; Escape cancels)"
+                disabled={saving || p.loading || !!moving}
+                onClick={() => pickUp(channel.id)}
+              >
+                <GripVertical size={17} />
+              </button>
+            )}
             <button
               className={`favorite-button ${channel.favorite ? "is-favorite" : ""}`}
               aria-label={`${channel.favorite ? "Unfavorite" : "Favorite"} ${channel.name}`}
@@ -223,6 +462,7 @@ export default function ChannelBrowser(p: Props) {
                 channel.favorite ? "Remove from favorites" : "Add to favorites"
               }
               onClick={() => p.onFavorite(channel)}
+              disabled={!!moving || saving}
             >
               <Star
                 size={17}
