@@ -1,5 +1,11 @@
 # Native Apple builds and TestFlight
 
+## Channel zapping release — 0.10.0 (13)
+
+Released Xcode 26.6 (17F113) built both iOS/iPadOS and tvOS Release archives on 2026-10-11. Upload, Apple processing and VektorTV Internal availability checks are in progress. The builds are not yet confirmed available to testers.
+
+Archives: `apps/apple/build/0.10.0-13/`. Logs: `/tmp/vektortv-0100-archive-{ios,tvos}.log`. See [verification.md](verification.md) for scoped channel navigation and platform verification.
+
 ## Favorites release — 0.9.0 (12)
 
 **0.9.0 (12) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-11 at approximately **17:37 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both final Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.

@@ -1,5 +1,19 @@
 # Verification
 
+## Scoped channel zapping — 0.10.0 (13)
+
+Verification in progress on 2026-10-11 with released Xcode 26.6 (17F113).
+
+- Frontend lint, all seven frontend tests, TypeScript/production build, all 25 core/Apple bridge tests, workspace Clippy with warnings denied and formatting passed. Core coverage includes category/country/search/Favorites/history scope, pagination beyond 200 channels, wrapping, saved Favorite order and absent/single-channel anchors. Frontend coverage includes sequential rapid inputs, Stop/new-selection invalidation and lookup failure recovery.
+- Browser preview at `http://127.0.0.1:1437/?demo=1`: category wrap, Page Up/Down, retained playback scope after browsing another category, Favorites wrapping in saved order, fullscreen right-arrow and popout controls passed. Desktop 1440 × 950, compact 360 × 250 and mobile 402 × 874 screenshots were inspected. Page identity, meaningful rendering, absence of framework overlays and console health (zero warnings/errors) passed. Browser plugin was unavailable; the Playwright skill/CLI supplied the checks. Fixtures do not prove native playback.
+- Apple TV category/search zapping, live playback/fullscreen/return/stop and Favorites wrapping/retained scope passed in simulator integration tests. iPhone category/search and live playback/fullscreen/return/stop passed; final Favorites and iPad checks are in progress.
+- Local macOS app and ARM64 disk image built; deep/strict codesign verification passed. Packaged Mac and Windows runtime checks and Windows/macOS CI packaging are in progress.
+- Both released-Xcode 0.10.0 (13) Release archives built. Upload/processing/internal-group verification is in progress; no availability claim is made yet.
+
+Platform differences: Apple TV uses AVKit native channel-flipping delegates for live AVPlayer playback and indirect swipes/directional presses on the VLC fullscreen surface. iPhone/iPad use Previous/Next buttons. Desktop uses buttons, Page Up/Down and fullscreen/popout arrow keys while preserving interactive-control keyboard input. All resolve neighbours from the same captured query across the full library, with scope retained through Retry and cleared on Stop. Physical Siri Remote and Apple devices, audio by listening, Intel Mac, macOS 12, all providers and prolonged playback remain unverified.
+
+Evidence: `/tmp/vektortv-0100-*`; browser screenshots `/tmp/vektortv-0100-{category,favorites,popout-minimum,mobile}.png`; Apple archives `apps/apple/build/0.10.0-13/`. Temporary simulator Favorites are backed up and will be restored after the checks.
+
 ## Favorites shortcut and arrangement — 0.9.0 (12)
 
 Checks on 2026-10-11 with released Xcode 26.6 (17F113):

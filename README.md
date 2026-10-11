@@ -2,7 +2,7 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI, AVKit/AVPlayer and an automatic VLCKit playback fallback. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.9.0
+## Features in 0.10.0
 
 The Tauri desktop client includes:
 
@@ -30,6 +30,14 @@ The app supplies no channels or subscription. Use your own authorized service. M
 **The provider returned an ended stream** means the live endpoint supplied a finished clip rather than an ongoing broadcast. Some providers use a black, silent clip as their offline response. Retry later or select a different variant of that channel; changing decoders cannot create the missing broadcast.
 
 Apple devices automatically retry failed or pictureless AVPlayer startup with VLC. **No picture or sound for 30 seconds** means that decoding did not start or the stream stalled. Retry the channel, check your connection, or choose another channel. Errors omit authenticated stream addresses and account values.
+
+## Channel zapping
+
+On Apple TV, watch full screen and **swipe right for the next channel or left for the previous channel**. AVPlayer uses Apple's native channel-flipping controls; VLC fallback accepts the same swipes and remote left/right presses. Menu returns to browsing and Play/Pause keeps its usual function. Previous/Next buttons are also available in the viewing room on iPhone, iPad and Apple TV.
+
+On Windows and macOS, use the player's **Previous channel / Next channel** buttons or **Page Up / Page Down**. In fullscreen or popout, left/right arrow keys also zap when focus is outside an interactive control. Text fields, lists and sliders retain their normal keyboard input.
+
+Zapping keeps the category, country, search and Favorites/Recently watched filters from when you selected the channel. It follows that scope's channel order across the full library, including channels beyond loaded pages, and wraps at either end. Browsing elsewhere does not change the playing scope until you select another channel. Retry and fullscreen/popout retain it; Stop clears it. Empty/single-channel scopes and channels removed from the scope do not retune. Favorites use the saved order.
 
 ## Favorites and channel order
 
@@ -91,7 +99,7 @@ Every version bump must include Release archives and TestFlight uploads for both
 
 The shared schemes include XCTest UI integration tests. Configure the simulator account with the development launcher first, then run `xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-iOS -destination 'platform=iOS Simulator,id=<simulator-udid>' -parallel-testing-enabled NO test`; use scheme `VektorTV-tvOS` and platform `tvOS Simulator` for Apple TV. Tests skip without a configured account and require the test provider's NRK1 channel for live playback. They restore the favorite state after checking it. Current results and coverage limits are in [docs/verification.md](docs/verification.md).
 
-The iOS and tvOS **0.9.0 (12)** builds are available in the **VektorTV Internal** TestFlight group. Both completed Apple processing and show **Testing** on 2026-10-11. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
+The **0.10.0 (13)** release is being verified and uploaded; see [release status](docs/apple-release.md). The earlier iOS and tvOS **0.9.0 (12)** builds are available in the **VektorTV Internal** TestFlight group. Both completed Apple processing and show **Testing** on 2026-10-11. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
 
 ## Run the desktop app
 

@@ -214,9 +214,12 @@ struct FullScreenPlayer: View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
             if playback.fallbackPlayer != nil {
-                FallbackPlayer(videoView: playback.fallbackSurface).ignoresSafeArea().accessibilityIdentifier("full-screen-player")
+                FallbackPlayer(videoView: playback.fallbackSurface, onZap: { direction in
+                    Task { await playback.zap(direction, library: library) }
+                }).ignoresSafeArea().accessibilityIdentifier("full-screen-player")
             } else {
-                NativePlayer(player: playback.player, onExit: { playback.isPresented = false }).ignoresSafeArea()
+                NativePlayer(player: playback.player, onExit: { playback.isPresented = false },
+                    onZap: { await playback.zap($0, library: library) }).ignoresSafeArea()
             }
             if playback.isLoading {
                 ProgressView("Connecting to live stream…")
@@ -226,7 +229,7 @@ struct FullScreenPlayer: View {
                 VStack(spacing: 24) {
                     ContentUnavailableView("Playback unavailable", systemImage: "exclamationmark.tv", description: Text(error))
                     Button("Retry channel") {
-                        if let channel = playback.channel { Task { await playback.play(channel, library: library) } }
+                        if let channel = playback.channel { Task { await playback.play(channel, library: library, keepingScope: true) } }
                     }.buttonStyle(CinemaButtonStyle(prominent: true))
                     Button("Back to channels") { playback.isPresented = false }
                         .buttonStyle(CinemaButtonStyle())
@@ -241,9 +244,17 @@ struct FullScreenPlayer: View {
         .overlay(alignment: .bottom) {
             if playback.fallbackPlayer != nil && playback.error == nil {
                 HStack(spacing: 24) {
+                    Button("Previous channel") { Task { await playback.zap(-1, library: library) } }
                     Button(playback.isPaused ? "Resume playback" : "Pause playback") { playback.togglePause() }
+                    Button("Next channel") { Task { await playback.zap(1, library: library) } }
                     Button("Stop playback") { playback.stop() }
                 }.buttonStyle(CinemaButtonStyle()).padding()
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            if let channel = playback.channel {
+                Text(channel.name).font(Theme.detailFont).padding().background(.black.opacity(0.65))
+                    .accessibilityIdentifier("playing-channel-name").allowsHitTesting(false)
             }
         }
         #if os(tvOS)

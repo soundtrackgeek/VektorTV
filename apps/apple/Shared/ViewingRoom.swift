@@ -105,7 +105,7 @@ struct ViewingRoom: View {
         let next = programmes.first { $0.startsAt > date } ?? channel.next.flatMap { $0.startsAt > date ? $0 : nil }
         return VStack(alignment: .leading, spacing: compact ? 10 : 14) {
             HStack(spacing: 10) {
-                Text(channel.name).lineLimit(2)
+                Text(channel.name).lineLimit(2).accessibilityIdentifier("inline-playing-channel-name")
                 if playback.error == nil {
                     Text(playback.isLoading ? "CONNECTING" : "LIVE").foregroundStyle(Theme.accent)
                 }
@@ -145,7 +145,7 @@ struct ViewingRoom: View {
 
     @ViewBuilder private func actions(_ channel: Channel) -> some View {
         if playback.error != nil {
-            Button { Task { await playback.play(channel, library: library) } } label: {
+            Button { Task { await playback.play(channel, library: library, keepingScope: true) } } label: {
                 Label("Retry channel", systemImage: "arrow.clockwise")
             }.buttonStyle(CinemaButtonStyle(prominent: true))
         } else {
@@ -153,6 +153,10 @@ struct ViewingRoom: View {
                 Label("Full screen", systemImage: "arrow.up.left.and.arrow.down.right")
             }.buttonStyle(CinemaButtonStyle(prominent: true)).accessibilityLabel("Full screen")
         }
+        Button { Task { await playback.zap(-1, library: library) } } label: { Image(systemName: "backward.end.fill") }
+            .buttonStyle(CinemaButtonStyle()).accessibilityLabel("Previous channel")
+        Button { Task { await playback.zap(1, library: library) } } label: { Image(systemName: "forward.end.fill") }
+            .buttonStyle(CinemaButtonStyle()).accessibilityLabel("Next channel")
         Button {
             favoriteBusy = true
             Task {

@@ -8,7 +8,8 @@ use std::sync::{atomic::Ordering, Mutex, MutexGuard};
 use tauri::{AppHandle, Emitter, Manager, State};
 use vektortv_core::{
     provider::{self, Connection},
-    ChannelPage, ChannelQuery, Country, Group, Programme, ProgrammePage, ProgrammeQuery,
+    ChannelPage, ChannelQuery, ChannelView, Country, Group, Programme, ProgrammePage,
+    ProgrammeQuery,
 };
 
 type Result<T> = std::result::Result<T, String>;
@@ -116,6 +117,17 @@ fn app_info_inner(state: &AppState) -> Result<AppInfo> {
 pub fn list_channels(state: State<'_, AppState>, query: ChannelQuery) -> Result<ChannelPage> {
     lock(&state.store)?
         .list(&query, now())
+        .map_err(|e| e.to_string())
+}
+#[tauri::command]
+pub fn adjacent_channel(
+    state: State<'_, AppState>,
+    query: ChannelQuery,
+    id: String,
+    direction: i32,
+) -> Result<Option<ChannelView>> {
+    lock(&state.store)?
+        .adjacent_channel(&query, &id, direction, now())
         .map_err(|e| e.to_string())
 }
 #[tauri::command]

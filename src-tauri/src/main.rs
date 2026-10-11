@@ -64,6 +64,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::app_info,
             commands::list_channels,
+            commands::adjacent_channel,
             commands::list_groups,
             commands::list_countries,
             commands::set_country_favorite,

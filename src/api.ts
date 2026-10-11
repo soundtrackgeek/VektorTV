@@ -163,7 +163,7 @@ const previewInfo: AppInfo = {
   playerAvailable: true,
   playerError: null,
   progress: { phase: "", active: false, message: "" },
-  version: "0.9.0",
+  version: "0.10.0",
   platform: "preview",
   credentialStorage: "the operating system credential store",
 };
@@ -245,6 +245,26 @@ export const api = {
       total: result.length,
       offset: query.offset,
     });
+  },
+  adjacent: async (
+    query: Query,
+    id: string,
+    direction: number,
+  ): Promise<Channel | null> => {
+    if (native)
+      return invoke<Channel | null>("adjacent_channel", {
+        query,
+        id,
+        direction,
+      });
+    const page = await api.list({
+      ...query,
+      offset: 0,
+      limit: channels.length,
+    });
+    const index = page.channels.findIndex((channel) => channel.id === id);
+    if (index < 0 || page.total < 2) return null;
+    return page.channels[(index + page.total + direction) % page.total];
   },
   schedule: (channelId: string, from: number, until: number) => {
     if (native)

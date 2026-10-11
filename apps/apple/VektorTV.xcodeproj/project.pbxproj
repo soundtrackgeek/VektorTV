@@ -292,8 +292,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.9.0";
-				"CURRENT_PROJECT_VERSION" = "12";
+				"MARKETING_VERSION" = "0.10.0";
+				"CURRENT_PROJECT_VERSION" = "13";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -341,8 +341,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.9.0";
-				"CURRENT_PROJECT_VERSION" = "12";
+				"MARKETING_VERSION" = "0.10.0";
+				"CURRENT_PROJECT_VERSION" = "13";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -667,8 +667,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.9.0";
-				"CURRENT_PROJECT_VERSION" = "12";
+				"MARKETING_VERSION" = "0.10.0";
+				"CURRENT_PROJECT_VERSION" = "13";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -717,8 +717,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.9.0";
-				"CURRENT_PROJECT_VERSION" = "12";
+				"MARKETING_VERSION" = "0.10.0";
+				"CURRENT_PROJECT_VERSION" = "13";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";

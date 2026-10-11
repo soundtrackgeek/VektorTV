@@ -29,6 +29,12 @@ final class LibraryStore {
     @ObservationIgnored private var checkingRefresh = false
     @ObservationIgnored private var lastAutomaticCheck = Date.distantPast
 
+    var channelQuery: ChannelQuery {
+        ChannelQuery(search: search, group: group, country: countryCode,
+            alphabetical: countryCode != nil && section != .history,
+            favoritesOnly: section == .favorites, historyOnly: section == .history)
+    }
+
     func start() async {
         guard !startupComplete else { return }
         startupComplete = true
@@ -124,7 +130,8 @@ final class LibraryStore {
         isLoading = true
         defer { if generation == queryGeneration { isLoading = false } }
         do {
-            let query = ChannelQuery(search: search, group: group, country: countryCode, alphabetical: countryCode != nil && section != .history, favoritesOnly: section == .favorites, historyOnly: section == .history, offset: more ? channels.count : 0)
+            var query = channelQuery
+            query.offset = more ? channels.count : 0
             let page: ChannelPage = try await call(CoreRequest(command: "list", query: query))
             let fetchedGroups: [ChannelGroup] = try await call(CoreRequest(command: "groups"))
             let fetchedCountries: [Country] = try await call(CoreRequest(command: "countries"))

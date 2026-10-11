@@ -17,10 +17,54 @@ final class PlaybackStore {
     @ObservationIgnored private var itemObservation: NSKeyValueObservation?
     @ObservationIgnored private var monitorTask: Task<Void, Never>?
     @ObservationIgnored private var recordedID: String?
+    @ObservationIgnored private var browsingScope: ChannelQuery?
+    @ObservationIgnored private var navigationGeneration = 0
+    @ObservationIgnored private var navigationRequest = 0
+    @ObservationIgnored private var navigationTask: Task<Channel?, Error>?
 
-    func play(_ channel: Channel, library: LibraryStore) async {
+    func play(_ channel: Channel, library: LibraryStore, keepingScope: Bool = false) async {
+        navigationGeneration += 1
+        navigationTask?.cancel()
+        navigationTask = nil
+        if !keepingScope { browsingScope = library.channelQuery }
+        await tune(channel, library: library)
+    }
+
+    /// Chain only the local neighbour lookups. Stream startup can be superseded,
+    /// so every rapid swipe advances from the previous requested channel.
+    func zap(_ direction: Int, library: LibraryStore) async -> Bool {
+        guard let scope = browsingScope, let current = channel else { return false }
+        let epoch = navigationGeneration
+        navigationRequest += 1
+        let request = navigationRequest
+        let previous = navigationTask
+        let lookup = Task { @MainActor () throws -> Channel? in
+            let anchor = try await previous?.value ?? current
+            guard epoch == navigationGeneration, !Task.isCancelled else { throw CancellationError() }
+            let neighbour: ChannelNeighbour = try await library.call(CoreRequest(command: "adjacent", query: scope, id: anchor.id, direction: direction))
+            return neighbour.channel
+        }
+        navigationTask = lookup
+        do {
+            guard let next = try await lookup.value, epoch == navigationGeneration else { return false }
+            if request == navigationRequest { await tune(next, library: library) }
+            return epoch == navigationGeneration
+        } catch {
+            if epoch == navigationGeneration, request == navigationRequest {
+                navigationTask = nil
+                library.message = error.localizedDescription
+            }
+            return false
+        }
+    }
+
+    private func tune(_ channel: Channel, library: LibraryStore) async {
         let fullScreen = isPresented
-        stop()
+        generation += 1
+        clearPlayers()
+        recordedID = nil
+        error = nil
+        isPaused = false
         isPresented = fullScreen
         let requestGeneration = generation
         self.channel = channel
@@ -164,6 +208,10 @@ final class PlaybackStore {
         error = message
     }
     func stop() {
+        navigationGeneration += 1
+        navigationTask?.cancel()
+        navigationTask = nil
+        browsingScope = nil
         generation += 1
         clearPlayers()
         channel = nil
@@ -179,14 +227,34 @@ final class PlaybackStore {
 /// fullscreen containers. Replacing the drawable can leave an existing vout black.
 struct FallbackPlayer: UIViewRepresentable {
     let videoView: UIView
+    var onZap: ((Int) -> Void)? = nil
     func makeUIView(context: Context) -> UIView {
+        #if os(tvOS)
+        let container = RemotePlayerSurface()
+        container.isUserInteractionEnabled = onZap != nil
+        if onZap != nil {
+            for direction in [-1, 1] {
+                let swipe = UISwipeGestureRecognizer(target: context.coordinator, action: direction == 1 ? #selector(Coordinator.nextChannel) : #selector(Coordinator.previousChannel))
+                swipe.direction = direction == 1 ? .right : .left
+                swipe.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.indirect.rawValue)]
+                container.addGestureRecognizer(swipe)
+                let press = UITapGestureRecognizer(target: context.coordinator, action: direction == 1 ? #selector(Coordinator.nextChannel) : #selector(Coordinator.previousChannel))
+                press.allowedPressTypes = [NSNumber(value: direction == 1 ? UIPress.PressType.rightArrow.rawValue : UIPress.PressType.leftArrow.rawValue)]
+                container.addGestureRecognizer(press)
+            }
+        }
+        #else
         let container = UIView()
-        container.backgroundColor = .black
         container.isUserInteractionEnabled = false
+        #endif
+        container.backgroundColor = .black
         attach(to: container)
         return container
     }
-    func updateUIView(_ container: UIView, context: Context) { attach(to: container) }
+    func updateUIView(_ container: UIView, context: Context) {
+        context.coordinator.onZap = onZap
+        attach(to: container)
+    }
     private func attach(to container: UIView) {
         guard videoView.superview !== container else { return }
         videoView.removeFromSuperview()
@@ -194,24 +262,41 @@ struct FallbackPlayer: UIViewRepresentable {
         videoView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         container.addSubview(videoView)
     }
-    func makeCoordinator() -> Coordinator { Coordinator(videoView) }
-    final class Coordinator {
+    func makeCoordinator() -> Coordinator { Coordinator(videoView, onZap: onZap) }
+    final class Coordinator: NSObject {
         let videoView: UIView
-        init(_ videoView: UIView) { self.videoView = videoView }
+        var onZap: ((Int) -> Void)?
+        init(_ videoView: UIView, onZap: ((Int) -> Void)?) { self.videoView = videoView; self.onZap = onZap }
+        @objc func nextChannel() { onZap?(1) }
+        @objc func previousChannel() { onZap?(-1) }
     }
     static func dismantleUIView(_ container: UIView, coordinator: Coordinator) {
         if coordinator.videoView.superview === container { coordinator.videoView.removeFromSuperview() }
     }
 }
 
+#if os(tvOS)
+private final class RemotePlayerSurface: UIView {
+    override var canBecomeFocused: Bool { isUserInteractionEnabled }
+}
+#endif
+
 struct NativePlayer: UIViewControllerRepresentable {
     let player: AVPlayer
     var onExit: () -> Void = {}
-    func makeCoordinator() -> Coordinator { Coordinator(onExit: onExit) }
+    var onZap: (Int) async -> Bool = { _ in false }
+    func makeCoordinator() -> Coordinator { Coordinator(onExit: onExit, onZap: onZap) }
     final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
         var onExit: () -> Void
-        init(onExit: @escaping () -> Void) { self.onExit = onExit }
+        var onZap: (Int) async -> Bool
+        init(onExit: @escaping () -> Void, onZap: @escaping (Int) async -> Bool) { self.onExit = onExit; self.onZap = onZap }
         #if os(tvOS)
+        func playerViewController(_ playerViewController: AVPlayerViewController, skipToNextChannel completion: @escaping (Bool) -> Void) {
+            Task { completion(await onZap(1)) }
+        }
+        func playerViewController(_ playerViewController: AVPlayerViewController, skipToPreviousChannel completion: @escaping (Bool) -> Void) {
+            Task { completion(await onZap(-1)) }
+        }
         func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool {
             // SwiftUI owns the presentation. AVKit must not dismiss the hosting controller itself.
             onExit()
@@ -231,6 +316,7 @@ struct NativePlayer: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
         context.coordinator.onExit = onExit
+        context.coordinator.onZap = onZap
         if controller.player !== player { controller.player = player }
     }
     static func dismantleUIViewController(_ controller: AVPlayerViewController, coordinator: Coordinator) {

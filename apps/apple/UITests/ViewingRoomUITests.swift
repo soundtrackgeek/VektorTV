@@ -113,6 +113,93 @@ final class ViewingRoomUITests: XCTestCase {
         XCTAssertEqual(rows.allElementsBoundByIndex.map(\.label), original)
     }
 
+    func testChannelZappingRetainsCategoryAndSearch() throws {
+        openNorway()
+        activate(app.buttons["Explore Norway"])
+        activate(app.buttons["Open group NORWAY HD & HEVC"])
+        let search = app.textFields["Find a channel"]
+        #if os(tvOS)
+        focus(search)
+        XCUIRemote.shared.press(.select)
+        app.typeText("NRK1 H")
+        XCUIRemote.shared.press(.menu)
+        #else
+        search.tap()
+        search.typeText("NRK1 H\n")
+        #endif
+        let rows = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch ' AND label CONTAINS[c] 'NRK1 H'"))
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15))
+        let names = rows.allElementsBoundByIndex.map { String($0.label.dropFirst(6)) }
+        try XCTSkipUnless(names.count > 1, "The provider must have multiple NRK1 variants in this category.")
+        activate(rows.firstMatch)
+        XCTAssertTrue(app.staticTexts["LIVE"].waitForExistence(timeout: 35))
+        activate(app.buttons["Next channel"])
+        assertPlaying(names[1])
+        activate(app.buttons["Previous channel"])
+        assertPlaying(names[0])
+        activate(app.buttons["Previous channel"])
+        assertPlaying(names.last!)
+        XCTAssertTrue(app.buttons["Channel group: NORWAY HD & HEVC"].exists)
+        XCTAssertEqual(search.value as? String, "NRK1 H")
+        capture("Zapping within category and search")
+        activate(app.buttons["Next channel"])
+        assertPlaying(names[0])
+        activate(app.buttons["Stop playback"])
+    }
+
+    func testFavoritesZappingWrapsAndRetainsScope() throws {
+        activate(app.buttons["Favorites"])
+        let rows = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch '"))
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15))
+        let names = rows.allElementsBoundByIndex.map { String($0.label.dropFirst(6)) }
+        try XCTSkipUnless(names.count > 1, "Save at least two Favorites before this integration check.")
+        activate(rows.firstMatch)
+        activate(app.buttons["Next channel"])
+        assertPlaying(names[1])
+        activate(app.buttons["Previous channel"])
+        assertPlaying(names[0])
+        activate(app.buttons["Previous channel"])
+        assertPlaying(names.last!)
+        capture("Zapping in saved Favorites order")
+        // Browsing another folder must not replace the playback scope.
+        openNorway()
+        activate(app.buttons["Explore Norway"])
+        activate(app.buttons["All channels A–Z"])
+        activate(app.buttons["Next channel"])
+        assertPlaying(names[0])
+        activate(app.buttons["Stop playback"])
+    }
+
+    #if os(tvOS)
+    func testFallbackRemoteZappingInFullScreen() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["VEKTORTV_ZAP_FALLBACK_CHECK"] == "1")
+        activate(app.buttons["Favorites"])
+        let rows = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch '"))
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15))
+        let names = rows.allElementsBoundByIndex.map { String($0.label.dropFirst(6)) }
+        XCTAssertEqual(names.count, 2, "Configure the two live VLC fallback Favorites for this opt-in check.")
+        activate(rows.firstMatch)
+        XCTAssertTrue(app.staticTexts["LIVE"].waitForExistence(timeout: 65))
+        activate(app.buttons["Full screen"])
+        XCTAssertTrue(app.buttons["Pause playback"].waitForExistence(timeout: 10), "The test stream must use VLC fallback")
+        XCUIRemote.shared.press(.right)
+        assertPlaying(names[1], fullScreen: true)
+        XCUIRemote.shared.press(.left)
+        assertPlaying(names[0], fullScreen: true)
+        capture("Fallback remote channel zap")
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.staticTexts["Your channels"].waitForExistence(timeout: 10))
+        assertPlaying(names[0])
+        activate(app.buttons["Stop playback"])
+    }
+    #endif
+
+    private func assertPlaying(_ name: String, fullScreen: Bool = false) {
+        let identifier = fullScreen ? "playing-channel-name" : "inline-playing-channel-name"
+        let label = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", identifier, name)).firstMatch
+        XCTAssertTrue(label.waitForExistence(timeout: 15), "Expected scoped channel: \(name)")
+    }
+
     /// Opt-in provider regression checks: availability is intentionally a live
     /// service observation, not a permanent assertion about these channel names.
     func testReportedPlaybackChannels() throws {

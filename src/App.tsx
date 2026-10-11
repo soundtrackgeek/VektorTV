@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Settings as SettingsIcon,
   Search,
@@ -30,6 +30,7 @@ import type {
   View,
 } from "./types";
 import { errorText, RequestSequence } from "./utils";
+import { ChannelNavigator } from "./channelNavigator";
 
 const initialStatus: PlayerStatus = {
   state: "idle",
@@ -93,6 +94,7 @@ export default function App() {
   const searchRef = useRef<HTMLInputElement>(null);
   const queries = useRef(new RequestSequence());
   const plays = useRef(new RequestSequence());
+  const navigator = useRef(new ChannelNavigator(api.adjacent));
   const moreBusy = useRef(false);
   const refreshing = useRef(false);
   const statusSequence = useRef(new RequestSequence());
@@ -212,16 +214,19 @@ export default function App() {
     if (countryCode) localStorage.setItem("vektortv.country", countryCode);
     else localStorage.removeItem("vektortv.country");
   }, [view, group, countryCode]);
-  const query = {
-    search: debouncedSearch,
-    group: group || null,
-    country: countryCode,
-    alphabetical: !!countryCode && view !== "history",
-    favoritesOnly: view === "favorites",
-    historyOnly: view === "history",
-    offset: 0,
-    limit: 100,
-  };
+  const query = useMemo(
+    () => ({
+      search: debouncedSearch,
+      group: group || null,
+      country: countryCode,
+      alphabetical: !!countryCode && view !== "history",
+      favoritesOnly: view === "favorites",
+      historyOnly: view === "history",
+      offset: 0,
+      limit: 100,
+    }),
+    [debouncedSearch, group, countryCode, view],
+  );
   const selectedId = selected?.id;
   useEffect(() => {
     const token = queries.current.next();
@@ -318,26 +323,43 @@ export default function App() {
       window.clearInterval(timer);
     };
   }, []);
-  const play = useCallback(async (channel: Channel) => {
-    const token = plays.current.next();
-    statusSequence.current.next();
-    setSelected(channel);
-    setPlayError(null);
-    setStatus((s) => ({ ...s, state: "opening", channelId: channel.id }));
-    try {
-      await api.play(channel.id, token);
-      if (plays.current.current(token)) {
-        const next = await api.status();
-        if (plays.current.current(token)) setStatus(next);
+  const play = useCallback(
+    async (channel: Channel, keepingScope = false) => {
+      if (!keepingScope || !navigator.current.active)
+        navigator.current.begin(query, channel.id);
+      const token = plays.current.next();
+      statusSequence.current.next();
+      setSelected(channel);
+      setPlayError(null);
+      setStatus((s) => ({ ...s, state: "opening", channelId: channel.id }));
+      try {
+        await api.play(channel.id, token);
+        if (plays.current.current(token)) {
+          const next = await api.status();
+          if (plays.current.current(token)) setStatus(next);
+        }
+      } catch (e) {
+        if (plays.current.current(token)) {
+          setPlayError(errorText(e));
+          setStatus((s) => ({ ...s, state: "error" }));
+        }
       }
-    } catch (e) {
-      if (plays.current.current(token)) {
+    },
+    [query],
+  );
+  const zap = useCallback(
+    async (direction: number) => {
+      try {
+        const next = await navigator.current.next(direction);
+        if (next) void play(next, true);
+      } catch (e) {
         setPlayError(errorText(e));
-        setStatus((s) => ({ ...s, state: "error" }));
       }
-    }
-  }, []);
+    },
+    [play],
+  );
   const action = useCallback(async (action: string, value?: number) => {
+    if (action === "stop") navigator.current.clear();
     const requestId = action === "stop" ? plays.current.next() : undefined;
     statusSequence.current.next();
     if (action === "volume") setStatus((s) => ({ ...s, volume: value ?? 80 }));
@@ -463,17 +485,37 @@ export default function App() {
       }
       if (
         event.target instanceof HTMLElement &&
-        event.target.closest("input,textarea,select,button")
+        (event.target.closest(
+          "input,textarea,select,[contenteditable='true']",
+        ) ||
+          (event.target.closest("button") &&
+            !(
+              event.target.closest(".playback-controls") &&
+              (event.key === "PageUp" || event.key === "PageDown")
+            )))
       )
         return;
       if (event.key.toLowerCase() === "f") {
         event.preventDefault();
         void toggleFullscreen();
       }
+      if (
+        selected &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        (event.key === "PageUp" ||
+          event.key === "PageDown" ||
+          ((fullscreen || popout) &&
+            (event.key === "ArrowLeft" || event.key === "ArrowRight")))
+      ) {
+        event.preventDefault();
+        void zap(event.key === "PageUp" || event.key === "ArrowLeft" ? -1 : 1);
+      }
       if (event.code === "Space" && selected) {
         event.preventDefault();
         if (status.state === "idle" || status.state === "error")
-          void play(selected);
+          void play(selected, true);
         else void action(status.state === "paused" ? "resume" : "pause");
       }
     };
@@ -489,6 +531,7 @@ export default function App() {
     status.state,
     action,
     play,
+    zap,
   ]);
   const go = (target: View) => {
     if (target === "favorites") {
@@ -729,7 +772,10 @@ export default function App() {
             status={status}
             info={info}
             onPlay={() => {
-              if (selected) void play(selected);
+              if (selected) void play(selected, true);
+            }}
+            onZap={(direction) => {
+              void zap(direction);
             }}
             onAction={(a, v) => {
               void action(a, v);

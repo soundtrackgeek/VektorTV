@@ -17,6 +17,8 @@ import {
   PanelTop,
   Pin,
   PinOff,
+  SkipBack,
+  SkipForward,
 } from "lucide-react";
 import { api, demo } from "../api";
 import type { AppInfo, Channel, PlayerStatus, Programme } from "../types";
@@ -28,6 +30,7 @@ interface Props {
   status: PlayerStatus;
   info: AppInfo | null;
   onPlay: () => void;
+  onZap: (direction: number) => void;
   onAction: (action: string, value?: number) => void;
   onFullscreen: () => void;
   fullscreen: boolean;
@@ -213,6 +216,24 @@ export default function PlayerView(p: Props) {
           </div>
         )}
         <div className="playback-controls">
+          <button
+            className="icon-button"
+            disabled={!p.channel}
+            aria-label="Previous channel"
+            title="Previous channel (Page Up)"
+            onClick={() => p.onZap(-1)}
+          >
+            <SkipBack size={19} />
+          </button>
+          <button
+            className="icon-button"
+            disabled={!p.channel}
+            aria-label="Next channel"
+            title="Next channel (Page Down)"
+            onClick={() => p.onZap(1)}
+          >
+            <SkipForward size={19} />
+          </button>
           <button
             className={
               p.popout ? "icon-button" : "primary-button full-screen-button"

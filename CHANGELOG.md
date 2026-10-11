@@ -2,6 +2,19 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.10.0] - 2026-10-11
+
+### Added
+
+- Apple TV left/right remote channel zapping in fullscreen, using native AVKit channel flipping and equivalent VLC fallback gestures.
+- Previous/Next channel buttons on iPhone, iPad, Apple TV, Windows and macOS; desktop Page Up/Down and fullscreen/popout left/right keyboard shortcuts.
+
+### Changed
+
+- Retain the category, country, search, Favorites or Recently watched scope when selecting a channel. Zapping follows its order across all pages and wraps within that scope; rapid requests advance from the previously requested channel.
+- Share scoped neighbour lookup in the Rust core across native Apple and Tauri desktop apps; preserve the scope through Retry and fullscreen/popout, and clear it on Stop.
+- Align all app versions at 0.10.0; increment the Apple build to 13.
+
 ## [0.9.0] - 2026-10-11
 
 ### Added

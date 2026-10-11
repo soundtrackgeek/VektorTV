@@ -77,6 +77,7 @@ struct CoreRequest: Encodable, Sendable {
     var favorite: Bool?
     var targetId: String?
     var before: Bool?
+    var direction: Int?
 }
 struct AppFailure: LocalizedError, Sendable {
     let message: String
@@ -86,6 +87,10 @@ struct AppFailure: LocalizedError, Sendable {
 struct PlaybackSource: Decodable, Sendable {
     let url: String
     let fallbackUrl: String
+}
+
+struct ChannelNeighbour: Decodable, Sendable {
+    let channel: Channel?
 }
 
 enum LibrarySection: String, CaseIterable, Identifiable {
