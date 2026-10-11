@@ -2,7 +2,16 @@
 
 ## Apple TV Menu/Back fix — 0.10.3 (16)
 
-Release verification is in progress. Both Apple targets are version 0.10.3/build 16; uploads and TestFlight availability are not yet confirmed. Windows/macOS versions align at 0.10.3; their existing Escape/fullscreen/popout behavior is intentionally unchanged because the fix handles tvOS remote commands and workspace history.
+**0.10.3 (16) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** Released Xcode **26.6 (17F113)** built both Release archives, and manifest/version and playback linkage guards passed. Apple accepted uploads at **19:22:40 iOS** and **19:27:20 tvOS Europe/Oslo** on 2026-10-11. Both completed processing and were visibly verified as **Testing** in the group's Builds page at approximately **19:32 Europe/Oslo**.
+
+| Platform | Version/build | Apple accepted upload (Europe/Oslo) | Distribution status | Build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.10.3 (16) | 2026-10-11 19:22:40 | Testing — VektorTV Internal | [iOS build 16](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/b18091ff-d338-4c86-bd78-76b06270b6ee) |
+| tvOS | 0.10.3 (16) | 2026-10-11 19:27:20 | Testing — VektorTV Internal | [tvOS build 16](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/f5248b4d-0fac-4d7f-8f84-730e897f424e) |
+
+Menu/Back now returns through workspace screens and country groups with their original filters. Sheets, Favorite arrangement and fullscreen retain their own back actions. A short Menu press at the root stays in VektorTV; the TV/Home button leaves the app. The five remote/navigation/playback checks passed on the Apple TV simulator across their final runs, along with iPhone playback/return/Stop and the hosted playback regressions. Physical Apple TV/Siri Remote testing remains unverified. iPhone/iPad touch navigation and desktop Escape behavior are intentionally unchanged; all versions align at 0.10.3. See [verification.md](verification.md) for desktop packages, CI evidence and limits.
+
+Archives/exports: `apps/apple/build/0.10.3-16/`, using `VektorTV-iOS-final.xcarchive` and `VektorTV-tvOS.xcarchive`; logs: `/tmp/vektortv-0103-archive-{ios-final,tvos}.log` and `/tmp/vektortv-0103-upload-{ios,tvos}.log`. Implementation commit `2f37d76`; [CI run 38159564783](https://github.com/soundtrackgeek/VektorTV/actions/runs/38159564783) passed all Apple, Windows and macOS jobs, including the hosted playback regressions and both desktop packages.
 
 ## Active VLC teardown crash fix — 0.10.2 (15)
 
