@@ -2,9 +2,14 @@
 
 ## Apple TV swipe crash fix — 0.10.1 (14)
 
-Distribution in progress. Both Apple apps use marketing version **0.10.1**, build **14**; final archives and TestFlight availability will be recorded here after verification and upload.
+Both released-Xcode **26.6 (17F113)** Release archives passed version/build and playback linkage checks. Apple accepted uploads of **0.10.1 (14)** at **18:35:04 iOS** and **18:34:34 tvOS Europe/Oslo** on 2026-10-11. Both completed processing and were visibly verified as **Testing in VektorTV Internal** at approximately **18:38 Europe/Oslo**. Archives/exports: `apps/apple/build/0.10.1-14/`; logs: `/tmp/vektortv-0101-archive-{ios,tvos}-final.log` and `/tmp/vektortv-0101-upload-{ios,tvos}.log`.
 
-The physical Apple TV crash at 18:18:44 on 0.10.0 (13), while swiping from NOR| NRK1 NORDNYTT HD to NOR| NRK2 HD, aborted in UIKit while AVKit dismissed its channel interstitial on a background thread. Both delegate completions now return on MainActor. The hosted tvOS regression covers next/previous and success/failure after async suspension; the old handlers failed all four main-thread assertions and the fix passed.
+| Platform | Version/build | Apple accepted upload (Europe/Oslo) | Distribution status | Build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.10.1 (14) | 2026-10-11 18:35:04 | Testing — VektorTV Internal | [iOS build 14](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/48b7f855-0e36-4b19-89e7-4f3d734da005) |
+| tvOS | 0.10.1 (14) | 2026-10-11 18:34:34 | Testing — VektorTV Internal | [tvOS build 14](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/bdbea63a-48b3-46b2-a68f-cbc42219033e) |
+
+The physical Apple TV crash at 18:18:44 on 0.10.0 (13), while swiping from NOR| NRK1 NORDNYTT HD to NOR| NRK2 HD, aborted in UIKit while AVKit dismissed its channel interstitial on a background thread. Both delegate completions now return on MainActor. The hosted tvOS regression covers next/previous and success/failure after async suspension; the old handlers failed all four main-thread assertions and the fix passed. [CI run 38155879742](https://github.com/soundtrackgeek/VektorTV/actions/runs/38155879742), commit `98d6038`, passed all Apple, Windows and macOS jobs, including the regression. Desktop runtime evidence and hardware-testing limits are recorded in [verification.md](verification.md).
 
 ## Channel zapping release — 0.10.0 (13)
 
