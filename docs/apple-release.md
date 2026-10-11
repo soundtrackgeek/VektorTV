@@ -2,7 +2,16 @@
 
 ## Active VLC teardown crash fix — 0.10.2 (15)
 
-The native project and maintained desktop versions are aligned at **0.10.2**, with Apple build **15**. The physical Apple TV crash at 18:48:33 Europe/Oslo on 2026-10-11 confirms a VLCKit decoder-thread teardown abort, independent of the previously fixed AVKit swipe completion. VLC events now dispatch asynchronously to the main queue on iOS/iPadOS and tvOS. Verification and distribution are in progress; **0.10.2 (15) is not yet confirmed available in TestFlight**. See [verification.md](verification.md) for the regression and provider-audio boundaries.
+**0.10.2 (15) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** Released Xcode **26.6 (17F113)** built both Release archives, and manifest/version and playback linkage guards passed. Apple accepted uploads at **19:01:33 iOS** and **19:01:28 tvOS Europe/Oslo** on 2026-10-11. Both completed processing and were visibly verified as **Testing** in the group's Builds page at approximately **19:05 Europe/Oslo**.
+
+| Platform | Version/build | Apple accepted upload (Europe/Oslo) | Distribution status | Build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.10.2 (15) | 2026-10-11 19:01:33 | Testing — VektorTV Internal | [iOS build 15](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/70ce0823-caba-4c1a-8a18-ec138a7439b0) |
+| tvOS | 0.10.2 (15) | 2026-10-11 19:01:28 | Testing — VektorTV Internal | [tvOS build 15](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/102bdc25-e529-42a3-a404-88878ce0bfba) |
+
+The physical Apple TV report reproduced at 18:48:33 on 0.10.1 (14) confirms a VLCKit decoder-thread teardown abort. VLC events now dispatch asynchronously to the main queue on iOS/iPadOS and tvOS. The release also keeps the compact player outside lazy channel rows to avoid a layout stall found during iPhone verification. The local active-player teardown regression and live Discovery History/DMAX-to-NRK1 switching tests passed on the relevant simulators. The maintained desktop versions align at 0.10.2; desktop uses libVLC directly and does not share this Objective-C callback ownership path. Audio by listening and the patched physical Apple TV remain unverified; see [verification.md](verification.md) for evidence, desktop checks and provider-audio limits.
+
+Archives/exports: `apps/apple/build/0.10.2-15/`; logs: `/tmp/vektortv-0102-archive-{ios,tvos}.log` and `/tmp/vektortv-0102-upload-{ios,tvos}.log`. Implementation commit `b70adef`; [CI run 38157896725](https://github.com/soundtrackgeek/VektorTV/actions/runs/38157896725) passed all Apple, Windows and macOS jobs, including the hosted callback/active VLC teardown regressions and both desktop packages.
 
 ## Apple TV swipe crash fix — 0.10.1 (14)
 
