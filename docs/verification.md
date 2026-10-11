@@ -1,5 +1,17 @@
 # Verification
 
+## Apple TV Menu/Back navigation — 0.10.3 (16)
+
+- Reproduced the old workspace failure with the remote regression: Menu from Favorites did not return to the preceding Countries screen. The final handlers retain workspace history, country detail selection and channel filters. A short Menu press at the root stays in VektorTV; the TV/Home button remains available to leave.
+- Settings, programme search, nested filters and channel schedules handle Menu within their presentation, including toolbar focus. The workspace handler also closes a pending presentation while focus is still behind its opening animation. Country detail handles Menu with focus in the content or the workspace header. Favorite arrangement cancellation and fullscreen return retain their own handlers.
+- Final build 16 remote tests passed workspace history/root behavior, country-group return/filter restoration with header focus, and nested sheet dismissal. Live playback/return/schedule dismissal/Stop passed on Apple TV, and playback/return/Stop passed on iPhone. An additional live-layout Favorite-arrangement check could not navigate remote focus to the row; the isolated arrangement check is in progress. Hosted AVKit completion and decoded local-VLC teardown tests passed on build 16.
+- Frontend lint, all seven tests, TypeScript/production build, all 25 core/Apple bridge tests, workspace formatting and Clippy with warnings denied passed. Both simulator playback linkage guards passed. Released Xcode 26.6 (17F113) built the final iOS archive; its manifest and playback linkage guard passed. Apple accepted the iOS upload at 19:22:40 Europe/Oslo. tvOS archiving and both TestFlight distribution checks are in progress.
+- Windows/macOS keep their existing mouse/keyboard navigation: this fix is specific to tvOS remote command handling. Versions align at 0.10.3. The local ARM64 macOS app/disk image built and deep/strict codesign verification passed; the package remains ad-hoc signed and unnotarized. Through Computer Use in Windows App, the existing 0.10.0 runtime entered fullscreen and Escape returned to the original Favorites channel browser without leaving the app. This checks UI navigation with playback stopped; it does not verify new-build Windows/macOS native playback. New Windows packaging is pending CI.
+
+Evidence: `/tmp/vektortv-0103-menu-baseline.xcresult`, `/tmp/vektortv-0103-menu-release.xcresult`, `/tmp/vektortv-0103-menu-playback-final.xcresult`, `/tmp/vektortv-0103-ios.xcresult`, hosted regressions in `/tmp/vektortv-0103-menu-16-final.xcresult`; matching `.log` files. Release artifacts: `apps/apple/build/0.10.3-16/`, `target/release/bundle/`; logs `/tmp/vektortv-0103-archive-{ios-final,tvos}.log`, `/tmp/vektortv-0103-upload-{ios,tvos}.log`, `/tmp/vektortv-0103-macos.log`.
+
+Limits: physical Apple TV/Siri Remote and new-build desktop playback remain unverified. TestFlight availability will be recorded after Apple processing and group verification.
+
 ## Active VLC teardown crash — 0.10.2 (15)
 
 - Retrieved the physical Apple TV crash reproduced at **18:48:33 Europe/Oslo on 2026-10-11**, running **0.10.1 (14)**. `HandleWatchTimeDiscontinuity` released an autoreleased notification containing the last player reference; `VLCMediaPlayer.dealloc` called `libvlc_media_player_unwatch_time`, re-entering the held VLC player lock and aborting. Earlier 18:14:52/18:15:19 reports show the same independent failure.

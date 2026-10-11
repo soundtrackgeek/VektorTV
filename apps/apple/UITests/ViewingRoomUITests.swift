@@ -13,6 +13,83 @@ final class ViewingRoomUITests: XCTestCase {
                           "Configure the simulator account with run-development.py before these integration tests.")
     }
 
+    #if os(tvOS)
+    func testMenuReturnsThroughWorkspaceHistoryWithoutExiting() {
+        activate(app.buttons["TV Guide"])
+        activate(app.buttons["Countries"])
+        activate(app.buttons["Favorites"])
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.textFields["Find a country"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Search programmes"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Watch"].isSelected)
+        XCUIRemote.shared.press(.menu)
+        XCTAssertEqual(app.state, .runningForeground, "Menu at the root must keep VektorTV open")
+        XCTAssertTrue(app.buttons["Watch"].isSelected)
+        capture("Menu returned through workspace history")
+    }
+
+    func testMenuReturnsFromCountryChannelsAndDetails() {
+        openNorway()
+        activate(app.buttons["Explore Norway"])
+        activate(app.buttons["Open group NORWAY HD & HEVC"])
+        XCTAssertTrue(app.buttons["Channel group: NORWAY HD & HEVC"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Open group NORWAY HD & HEVC"].waitForExistence(timeout: 10),
+                      "Back from country channels must restore the country's groups")
+        focus(app.buttons["Countries"])
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.textFields["Find a country"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Watch"].isSelected)
+        XCTAssertFalse(app.buttons["Back to countries"].exists, "Back must restore the original channel filters")
+        XCTAssertEqual(app.state, .runningForeground)
+        capture("Menu returned from country channels")
+    }
+
+    func testMenuDismissesSheetsBeforeWorkspaceHistory() {
+        activate(app.buttons["TV Guide"])
+        activate(app.buttons["Settings"])
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+        focus(app.buttons["Done"])
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Done"].waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Search programmes"].waitForExistence(timeout: 10))
+        activate(app.buttons["Search programmes"])
+        XCTAssertTrue(app.buttons["Filters"].waitForExistence(timeout: 10))
+        activate(app.buttons["Filters"])
+        XCTAssertTrue(app.buttons["Reset filters"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Reset filters"].waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Filters"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Filters"].waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Search programmes"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Watch"].isSelected)
+        XCTAssertEqual(app.state, .runningForeground)
+    }
+
+    func testMenuCancelsFavoriteArrangementBeforeGoingBack() throws {
+        activate(app.buttons["Favorites"])
+        let first = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch '")).firstMatch
+        try XCTSkipUnless(first.waitForExistence(timeout: 10), "Save a Favorite before this integration check.")
+        let original = first.label
+        focus(first)
+        XCUIRemote.shared.press(.select, forDuration: 0.7)
+        let status = app.staticTexts["favorite-arrangement-status"]
+        XCTAssertTrue(status.waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(status.waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Favorites"].isSelected)
+        XCTAssertEqual(first.label, original)
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Watch"].isSelected)
+        XCTAssertEqual(app.state, .runningForeground)
+    }
+    #endif
+
     func testSearchPlaybackAndReturnFromFullScreen() throws {
         let search = app.textFields["Find a channel"]
         #if os(tvOS)
@@ -52,6 +129,13 @@ final class ViewingRoomUITests: XCTestCase {
         XCTAssertTrue(player.waitForNonExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Your channels"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["Stop playback"].waitForExistence(timeout: 10), "Returning from full screen must retain the selected stream")
+        #if os(tvOS)
+        activate(app.buttons["Programme guide"])
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+        XCUIRemote.shared.press(.menu)
+        XCTAssertTrue(app.buttons["Done"].waitForNonExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Stop playback"].exists, "Dismissing the schedule must retain playback")
+        #endif
         activate(app.buttons["Stop playback"])
         XCTAssertFalse(app.buttons["Stop playback"].exists)
         capture("Returned to channels after stop")

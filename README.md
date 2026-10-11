@@ -2,7 +2,7 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI, AVKit/AVPlayer and an automatic VLCKit playback fallback. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.10.2
+## Features in 0.10.3
 
 The Tauri desktop client includes:
 
@@ -33,7 +33,7 @@ Apple devices automatically retry failed or pictureless AVPlayer startup with VL
 
 ## Channel zapping
 
-On Apple TV, watch full screen and **swipe right for the next channel or left for the previous channel**. AVPlayer uses Apple's native channel-flipping controls; VLC fallback accepts the same swipes and remote left/right presses. Menu returns to browsing and Play/Pause keeps its usual function. Previous/Next buttons are also available in the viewing room on iPhone, iPad and Apple TV.
+On Apple TV, watch full screen and **swipe right for the next channel or left for the previous channel**. AVPlayer uses Apple's native channel-flipping controls; VLC fallback accepts the same swipes and remote left/right presses. Menu/Back returns from fullscreen to browsing while playback continues. From the workspace, it returns to the previous screen, including country groups and their channel filters; it dismisses sheets or cancels Favorite arrangement first. A short press at the root keeps VektorTV open; use the TV/Home button to leave. Play/Pause keeps its usual function. Previous/Next buttons are also available in the viewing room on iPhone, iPad and Apple TV.
 
 On Windows and macOS, use the player's **Previous channel / Next channel** buttons or **Page Up / Page Down**. In fullscreen or popout, left/right arrow keys also zap when focus is outside an interactive control. Text fields, lists and sliders retain their normal keyboard input.
 

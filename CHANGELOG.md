@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.10.3] - 2026-10-11
+
+### Fixed
+
+- Make Apple TV remote Menu/Back return through the previous workspace screens and country groups, restoring their channel filters instead of leaving the app. A short press at the root keeps VektorTV open; use the TV/Home button to leave.
+- Let Menu from the Countries overview reach workspace back navigation; retain fullscreen return, modal dismissal and Favorite arrangement cancellation before navigating back.
+- Add tvOS remote regression coverage for workspace history, country/group return, root behavior and nested sheets.
+
+### Changed
+
+- Align all app versions at 0.10.3; increment the Apple build to 16. This remote-specific navigation fix preserves iPhone/iPad touch navigation and Windows/macOS Escape/fullscreen/popout behavior.
+
 ## [0.10.2] - 2026-10-11
 
 ### Fixed

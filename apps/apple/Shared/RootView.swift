@@ -16,6 +16,62 @@ struct RootView: View {
     @State private var scheduleChannel: Channel?
     @State private var guideChannel: Channel?
     @State private var programmeSearchPresented = false
+    #if os(tvOS)
+    // The workspace uses tab selection rather than NavigationStack destinations.
+    // Keep its back history explicitly, including the filters that define a screen.
+    private struct WorkspaceLocation {
+        let tab: WorkspaceTab
+        let section: LibrarySection
+        let search: String
+        let group: String?
+        let countryCode: String?
+        let selectedCountryCode: String?
+        let guideChannel: Channel?
+    }
+    @State private var backHistory: [WorkspaceLocation] = []
+    @State private var selectedCountryCode: String?
+    #endif
+
+    private func navigate(to destination: WorkspaceTab, prepare: () -> Void = {}) {
+        #if os(tvOS)
+        if destination != tab {
+            backHistory.append(WorkspaceLocation(tab: tab, section: library.section,
+                search: library.search, group: library.group, countryCode: library.countryCode,
+                selectedCountryCode: selectedCountryCode, guideChannel: guideChannel))
+        }
+        #endif
+        prepare()
+        tab = destination
+    }
+
+    #if os(tvOS)
+    private func goBack() {
+        // Focus can still be in the workspace while a presentation animates in.
+        if playback.isPresented { playback.isPresented = false; return }
+        if settingsPresented { settingsPresented = false; return }
+        if programmeSearchPresented { programmeSearchPresented = false; return }
+        if scheduleChannel != nil { scheduleChannel = nil; return }
+        // Header focus is outside CountryBrowser's local exit handler.
+        if tab == .countries, selectedCountryCode != nil {
+            selectedCountryCode = nil
+            return
+        }
+        // At the root, a short Menu press stays in the app. The TV/Home button
+        // still provides the system's normal way to leave VektorTV.
+        guard let previous = backHistory.popLast() else { return }
+        library.section = previous.section
+        library.search = previous.search
+        library.group = previous.group
+        library.countryCode = previous.countryCode
+        selectedCountryCode = previous.selectedCountryCode
+        guideChannel = previous.guideChannel
+        tab = previous.tab
+    }
+    #endif
+
+    private func openCountry(_ country: Country, group: String?) {
+        navigate(to: .watch) { library.openCountry(country, group: group) }
+    }
 
     private var queryKey: String {
         "\(library.search)|\(library.group ?? "")|\(library.section.rawValue)|\(library.countryCode ?? "")|\(library.hasAccount)"
@@ -46,20 +102,38 @@ struct RootView: View {
         .sheet(isPresented: $settingsPresented) {
             NavigationStack {
                 SettingsView(library: library, playback: playback)
-                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { settingsPresented = false } } }
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { settingsPresented = false }
+                                #if os(tvOS)
+                                .onExitCommand { settingsPresented = false }
+                                #endif
+                        }
+                    }
+                    #if os(tvOS)
+                    .onExitCommand { settingsPresented = false }
+                    #endif
             }
         }
         .sheet(isPresented: $programmeSearchPresented) {
             NavigationStack {
                 ProgrammeSearchView(library: library) { channel in
                     programmeSearchPresented = false
-                    tab = .watch
+                    navigate(to: .watch)
                     Task { await playback.play(channel, library: library) }
                 }
+                #if os(tvOS)
+                .onExitCommand { programmeSearchPresented = false }
+                #endif
             }
         }
         .sheet(item: $scheduleChannel) { channel in
-            NavigationStack { ScheduleView(channel: channel, library: library, playback: playback) }
+            NavigationStack {
+                ScheduleView(channel: channel, library: library, playback: playback)
+                    #if os(tvOS)
+                    .onExitCommand { scheduleChannel = nil }
+                    #endif
+            }
         }
         .fullScreenCover(isPresented: $playback.isPresented) {
             FullScreenPlayer(playback: playback, library: library)
@@ -69,7 +143,12 @@ struct RootView: View {
             else if tab == .watch && section == .favorites { tab = .favorites }
         }
         .onChange(of: library.hasAccount) { _, connected in
-            if !connected { settingsPresented = false; guideChannel = nil }
+            if !connected {
+                settingsPresented = false; guideChannel = nil
+                #if os(tvOS)
+                backHistory = []; selectedCountryCode = nil
+                #endif
+            }
         }
     }
 
@@ -99,10 +178,11 @@ struct RootView: View {
                     }.padding(.horizontal, Theme.pageInset).padding(.vertical, 8)
                 }
                 if tab == .countries {
-                    CountryBrowser(library: library) { country, group in
-                        library.openCountry(country, group: group)
-                        tab = .watch
-                    }
+                    #if os(tvOS)
+                    CountryBrowser(library: library, selectedCode: $selectedCountryCode, open: openCountry)
+                    #else
+                    CountryBrowser(library: library, open: openCountry)
+                    #endif
                 } else if wide {
                     GeometryReader { geometry in
                         HStack(spacing: 0) {
@@ -111,7 +191,7 @@ struct RootView: View {
                             Rectangle().fill(Theme.line).frame(width: 1)
                             if tab == .guide {
                                 if let channel = guideChannel {
-                                    ScheduleContent(channel: channel, library: library, playback: playback, onWatch: { tab = .watch })
+                                    ScheduleContent(channel: channel, library: library, playback: playback, onWatch: { navigate(to: .watch) })
                                         .id(channel.id)
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 } else {
@@ -137,18 +217,21 @@ struct RootView: View {
                     channelBrowser(wide: false)
                 }
                 if tab != .watch && tab != .favorites, playback.channel != nil {
-                    NowPlayingBar(playback: playback) { tab = .watch }
+                    NowPlayingBar(playback: playback) { navigate(to: .watch) }
                 }
             }
             .background(Theme.background)
             .toolbar(.hidden, for: .navigationBar)
+            #if os(tvOS)
+            .onExitCommand(perform: goBack)
+            #endif
         }
     }
 
     private func channelBrowser(wide: Bool) -> some View {
         ChannelBrowser(library: library, playback: playback, guide: tab == .guide,
             wide: wide, queryKey: queryKey,
-            showCountries: { tab = .countries },
+            showCountries: { navigate(to: .countries) },
             selectedGuideID: guideChannel?.id,
             schedule: { channel in
                 if wide && tab == .guide { guideChannel = channel }
@@ -187,9 +270,13 @@ struct RootView: View {
         HStack(spacing: 4) {
             ForEach(WorkspaceTab.allCases, id: \.self) { item in
                 Button {
-                    if item == .favorites { library.openFavorites() }
-                    else if item == .watch && library.section == .favorites { library.section = .live }
-                    tab = item
+                    navigate(to: item) {
+                        if item == .favorites { library.openFavorites() }
+                        else if item == .watch && library.section == .favorites { library.section = .live }
+                        #if os(tvOS)
+                        if item == .countries { selectedCountryCode = nil }
+                        #endif
+                    }
                 } label: {
                     Text(item.rawValue)
                         .font(Theme.controlFont)

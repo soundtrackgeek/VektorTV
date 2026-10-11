@@ -1,5 +1,9 @@
 # Native Apple builds and TestFlight
 
+## Apple TV Menu/Back fix — 0.10.3 (16)
+
+Release verification is in progress. Both Apple targets are version 0.10.3/build 16; uploads and TestFlight availability are not yet confirmed. Windows/macOS versions align at 0.10.3; their existing Escape/fullscreen/popout behavior is intentionally unchanged because the fix handles tvOS remote commands and workspace history.
+
 ## Active VLC teardown crash fix — 0.10.2 (15)
 
 **0.10.2 (15) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** Released Xcode **26.6 (17F113)** built both Release archives, and manifest/version and playback linkage guards passed. Apple accepted uploads at **19:01:33 iOS** and **19:01:28 tvOS Europe/Oslo** on 2026-10-11. Both completed processing and were visibly verified as **Testing** in the group's Builds page at approximately **19:05 Europe/Oslo**.

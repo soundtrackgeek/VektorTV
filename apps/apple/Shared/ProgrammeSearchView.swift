@@ -79,7 +79,14 @@ struct ProgrammeSearchView: View {
         }
         .padding(Theme.pageInset).background(Theme.background)
         .navigationTitle("Search programmes")
-        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Done") { dismiss() }
+                    #if os(tvOS)
+                    .onExitCommand { dismiss() }
+                    #endif
+            }
+        }
         .onChange(of: filterKey) { _, _ in offset = 0 }
         .task(id: "\(filterKey)|\(offset)|\(attempt)") {
             loading = true; message = nil; page = nil
@@ -116,7 +123,17 @@ struct ProgrammeSearchView: View {
                     Toggle("Favorite channels", isOn: $favoritesOnly)
                     Button("Reset filters") { country = ""; group = ""; when = "all"; favoritesOnly = false }
                 }.navigationTitle("Programme filters")
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { filtersPresented = false } } }
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { filtersPresented = false }
+                            #if os(tvOS)
+                            .onExitCommand { filtersPresented = false }
+                            #endif
+                    }
+                }
+                #if os(tvOS)
+                .onExitCommand { filtersPresented = false }
+                #endif
             }
         }
     }

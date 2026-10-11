@@ -20,8 +20,13 @@ struct CountryFlag: View {
 
 struct CountryBrowser: View {
     @Bindable var library: LibraryStore
+    #if os(tvOS)
+    @Binding var selectedCode: String?
+    #endif
     let open: (Country, String?) -> Void
+    #if !os(tvOS)
     @State private var selectedCode: String?
+    #endif
     @State private var search = ""
     @State private var saving = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -64,7 +69,7 @@ struct CountryBrowser: View {
             .onChange(of: selectedCode) { _, _ in scroll.scrollTo("country-top", anchor: .top) }
         }
         #if os(tvOS)
-        .onExitCommand { if selectedCode != nil { selectedCode = nil } }
+        .onExitCommand(perform: selectedCode == nil ? nil : { selectedCode = nil })
         #endif
     }
 

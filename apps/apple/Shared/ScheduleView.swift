@@ -8,7 +8,14 @@ struct ScheduleView: View {
     var body: some View {
         ScheduleContent(channel: channel, library: library, playback: playback, onWatch: { dismiss() })
             .navigationTitle("Programme guide")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                        #if os(tvOS)
+                        .onExitCommand { dismiss() }
+                        #endif
+                }
+            }
     }
 }
 
