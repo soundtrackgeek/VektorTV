@@ -12,6 +12,8 @@ export default tseslint.config(
       "src-tauri",
       "output",
       "artifacts",
+      "apps/apple/.derivedData/**",
+      "apps/apple/build/**",
     ],
   },
   js.configs.recommended,

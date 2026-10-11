@@ -2,6 +2,24 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.8.0] - 2026-10-11
+
+### Added
+
+- Automatic VLCKit fallback on iOS/iPadOS and tvOS for streams AVPlayer cannot play, including live H.264 streams with MP2 audio and direct MPEG-TS. Retain inline/fullscreen switching, stop and remote pause/resume.
+- Pin VideoLAN's official Swift package and artifact checksum; bundle its LGPL notices in both Apple apps.
+
+### Fixed
+
+- Detect ended/empty provider HLS responses before tuning Xtream live channels on Apple, Windows and macOS, even when HTTP 200 or a `.ts` address disguises an offline clip. Show a provider-unavailable message instead of black, silent LIVE playback.
+- Require decoded output before LIVE and viewing history, and report prolonged startup/playback stalls across Apple and desktop players.
+- Stop the previous desktop channel before stream preflight and retain request ordering during rapid channel changes.
+
+### Changed
+
+- Align desktop and native Apple versions at 0.8.0; increment the Apple build to 11. AVPlayer retains native AVKit integration; fallback fullscreen uses app controls without AVKit Picture in Picture/AirPlay.
+- Exclude downloaded Apple build/package files from frontend lint.
+
 ## [0.7.0] - 2026-10-01
 
 ### Added

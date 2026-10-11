@@ -75,7 +75,10 @@ struct ViewingRoom: View {
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
             .overlay {
                 if channel != nil && !playback.isPresented && playback.error == nil {
-                    InlinePlayer(player: playback.player).allowsHitTesting(false).accessibilityHidden(true)
+                    Group {
+                        if playback.fallbackPlayer != nil { FallbackPlayer(videoView: playback.fallbackSurface) }
+                        else { InlinePlayer(player: playback.player) }
+                    }.allowsHitTesting(false).accessibilityHidden(true)
                 }
                 if playback.isLoading {
                     VStack(spacing: 12) {

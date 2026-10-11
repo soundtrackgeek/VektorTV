@@ -204,7 +204,11 @@ struct FullScreenPlayer: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
-            NativePlayer(player: playback.player, onExit: { playback.isPresented = false }).ignoresSafeArea()
+            if playback.fallbackPlayer != nil {
+                FallbackPlayer(videoView: playback.fallbackSurface).ignoresSafeArea().accessibilityIdentifier("full-screen-player")
+            } else {
+                NativePlayer(player: playback.player, onExit: { playback.isPresented = false }).ignoresSafeArea()
+            }
             if playback.isLoading {
                 ProgressView("Connecting to live stream…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -225,8 +229,17 @@ struct FullScreenPlayer: View {
             }.accessibilityLabel("Close full screen")
             #endif
         }
+        .overlay(alignment: .bottom) {
+            if playback.fallbackPlayer != nil && playback.error == nil {
+                HStack(spacing: 24) {
+                    Button(playback.isPaused ? "Resume playback" : "Pause playback") { playback.togglePause() }
+                    Button("Stop playback") { playback.stop() }
+                }.buttonStyle(CinemaButtonStyle()).padding()
+            }
+        }
         #if os(tvOS)
         .onExitCommand { playback.isPresented = false }
+        .onPlayPauseCommand { playback.togglePause() }
         #endif
     }
 }

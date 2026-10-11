@@ -1,8 +1,8 @@
 # VektorTV
 
-A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI and AVKit/AVPlayer. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
+A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI, AVKit/AVPlayer and an automatic VLCKit playback fallback. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.6.1
+## Features in 0.8.0
 
 The Tauri desktop client includes:
 
@@ -21,9 +21,15 @@ The Tauri desktop client includes:
 
 The Cinema Lounge design is shared across desktop and native Apple: Watch/TV Guide/Countries navigation, a restrained charcoal/teal palette, real channel identities, a 16:9 viewing surface and programme details. Desktop keeps searchable groups, paginated lists, keyboard shortcuts and playback controls outside the native video surface.
 
-The native Apple apps add HLS live playback, channel search/group filters, favorites/history, now/next and channel schedules. The Cinema Lounge interface gives Apple TV and wider iPad windows a channel sidebar beside a 16:9 inline player and programme details; compact iPhone/iPad windows stack the player with the channel list. Channel names and logos remain visible, with a white remote-focus outline separate from the teal playing-channel marker. Accounts are saved in Keychain. Apple TV metadata lives in its purgeable cache; favorites/history survive ordinary restarts but tvOS may reclaim that cache. A provider must supply streams/codecs AVPlayer supports; desktop VLC supports additional formats.
+The native Apple apps add HLS live playback, channel search/group filters, favorites/history, now/next and channel schedules. The Cinema Lounge interface gives Apple TV and wider iPad windows a channel sidebar beside a 16:9 inline player and programme details; compact iPhone/iPad windows stack the player with the channel list. Channel names and logos remain visible, with a white remote-focus outline separate from the teal playing-channel marker. Accounts are saved in Keychain. Apple TV metadata lives in its purgeable cache; favorites/history survive ordinary restarts but tvOS may reclaim that cache. Compatible Apple streams use AVPlayer. If the stream fails or produces no decoded picture during startup, the app automatically tries VLCKit, including MPEG audio such as MP2 and direct MPEG-TS playlists. Windows/macOS use embedded VLC throughout. Xtream live endpoints are checked for ended/empty HLS playlists, including offline clips served with HTTP 200; these show a provider-unavailable message instead of LIVE. Playback must produce decoded output before LIVE/history, and a prolonged stall shows an actionable error. A decoder cannot restore a broadcast the provider is no longer serving. AVKit Picture in Picture and system playback controls apply to AVPlayer; fallback fullscreen uses app controls and Apple TV Menu/Play-Pause, without AVKit Picture in Picture or AirPlay integration.
 
 The app supplies no channels or subscription. Use your own authorized service. Movies/VOD, series, recording, catch-up, multiple providers and cross-device sync are future work.
+
+## When a channel will not play
+
+**The provider returned an ended stream** means the live endpoint supplied a finished clip rather than an ongoing broadcast. Some providers use a black, silent clip as their offline response. Retry later or select a different variant of that channel; changing decoders cannot create the missing broadcast.
+
+Apple devices automatically retry failed or pictureless AVPlayer startup with VLC. **No picture or sound for 30 seconds** means that decoding did not start or the stream stalled. Retry the channel, check your connection, or choose another channel. Errors omit authenticated stream addresses and account values.
 
 ## Browse by country
 
@@ -57,7 +63,7 @@ rustup target add --toolchain 1.98.1 aarch64-apple-ios aarch64-apple-ios-sim aar
 open apps/apple/VektorTV.xcodeproj
 ```
 
-The Xcode build phase compiles `vektortv-apple` and links it into each native target. No Tauri webview, VLC, Node.js, XcodeGen or generated Swift bindings are needed. Regenerate the checked-in project or icon assets with `python3 apps/apple/scripts/generate-project.py` or `python3 apps/apple/scripts/generate-assets.py`.
+The Xcode build phase compiles `vektortv-apple` and links it into each native target. Xcode resolves VideoLAN's official VLCKit Swift package, pinned to **4.0.0-a25**, for iOS/tvOS device and simulator builds. This upstream prerelease supplies the official multi-platform Swift package; its artifact checksum and exact source revision are locked in `Package.resolved`. No Tauri webview, Node.js, XcodeGen or generated Swift bindings are needed. The package download is approximately 923 MB; allow space for its unpacked framework. LGPL notices ship inside each app; see [third-party/README.md](third-party/README.md). Regenerate the checked-in project or icon assets with `python3 apps/apple/scripts/generate-project.py` or `python3 apps/apple/scripts/generate-assets.py`.
 
 On first launch, enter your Xtream account in **Settings**; the server defaults to `http://ourxtream.com`. **Connect & load channels** imports the catalog before loading the guide in the background. Search and **All groups** narrow the channel list; **All channels** switches to Favorites or Recently watched. Select a channel to watch inline, then use **Full screen** to expand the picture. Back/Menu on Apple TV and Close on iPhone/iPad return to the viewing room while playback continues; **Stop playback** ends the stream. The programme area has favorite, schedule and stop actions. Long-press a channel for its favorite and schedule menu. **TV Guide** shows channel schedules, and the playing-channel bar returns to Watch.
 

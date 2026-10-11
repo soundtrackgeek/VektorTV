@@ -244,9 +244,23 @@ impl AppleCore {
             Request::Stream { id } => {
                 let (connection, channel, revision) = self.channel_context(&id)?;
                 if connection.kind == "xtream" {
-                    return Ok(json!(connection.hls_url(channel.stream_id.ok_or_else(
-                        || Error::Invalid("This channel has no stream identifier.".into())
-                    )?)?));
+                    let stream_id = channel.stream_id.ok_or_else(|| {
+                        Error::Invalid("This channel has no stream identifier.".into())
+                    })?;
+                    let url = connection.hls_url(stream_id)?;
+                    self.runtime
+                        .block_on(vektortv_core::playback::check_live_stream(
+                            &provider::client()?,
+                            &url,
+                        ))?;
+                    if self.state()?.revision != revision {
+                        return Err(Error::Invalid(
+                            "The account changed before playback. Choose the channel again.".into(),
+                        ));
+                    }
+                    return Ok(
+                        json!({"url": url, "fallbackUrl": connection.stream_url(stream_id)?}),
+                    );
                 }
                 if self.state()?.streams.is_empty() {
                     let catalog = self.runtime.block_on(async {
@@ -263,9 +277,10 @@ impl AppleCore {
                         "The account changed before playback. Choose the channel again.".into(),
                     ));
                 }
-                Ok(json!(state.streams.get(&id).ok_or_else(|| {
+                let url = state.streams.get(&id).ok_or_else(|| {
                     Error::Invalid("Refresh the playlist before playing this channel.".into())
-                })?))
+                })?;
+                Ok(json!({"url": url, "fallbackUrl": url}))
             }
             Request::Favorite { id, favorite } => {
                 self.state()?.store.favorite(&id, favorite)?;

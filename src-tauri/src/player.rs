@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     ffi::{c_char, c_int, c_void, CString},
     path::Path,
+    time::{Duration, Instant},
 };
 use tauri::WebviewWindow;
 mod surface;
@@ -105,6 +106,7 @@ pub struct PlayerStatus {
     pub height: u32,
     pub decoded_video: i32,
     pub decoded_audio: i32,
+    pub error: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -128,6 +130,9 @@ pub struct Player {
     pub history_recorded: bool,
     last_request: u64,
     volume: u32,
+    last_progress: Instant,
+    last_decoded: (i32, i32),
+    playback_error: Option<String>,
 }
 
 impl Player {
@@ -169,6 +174,9 @@ impl Player {
                 history_recorded: false,
                 last_request: 0,
                 volume: 80,
+                last_progress: Instant::now(),
+                last_decoded: (0, 0),
+                playback_error: None,
             })
         }
     }
@@ -192,6 +200,9 @@ impl Player {
             (self.api.set_media)(self.player as Pointer, media);
             self.channel_id = Some(channel_id);
             self.history_recorded = false;
+            self.last_progress = Instant::now();
+            self.last_decoded = (0, 0);
+            self.playback_error = None;
             if (self.api.play)(self.player as Pointer) != 0 {
                 return Err("Playback could not start. Try another channel or reconnect.".into());
             }
@@ -204,6 +215,7 @@ impl Player {
             self.surface.hide();
         }
         self.channel_id = None;
+        self.playback_error = None;
     }
     pub fn action(
         &mut self,
@@ -231,6 +243,9 @@ impl Player {
                 _ => return Err("Unknown playback control.".into()),
             }
         }
+        if matches!(action, "pause" | "resume") {
+            self.last_progress = Instant::now();
+        }
         Ok(())
     }
     pub fn bounds(&self, bounds: Bounds) -> Result<(), String> {
@@ -246,12 +261,12 @@ impl Player {
         });
         Ok(())
     }
-    pub fn status(&self) -> PlayerStatus {
+    pub fn status(&mut self) -> PlayerStatus {
         let mut width = 0;
         let mut height = 0;
         let mut stats = MediaStats::default();
         unsafe {
-            let state = if self.channel_id.is_none() {
+            let mut state = if self.channel_id.is_none() {
                 "idle"
             } else {
                 match (self.api.get_state)(self.player as Pointer) {
@@ -269,6 +284,31 @@ impl Player {
             if let Some(media) = self.media {
                 (self.api.media_get_stats)(media as Pointer, &mut stats);
             }
+            let decoded = (stats.decoded_video, stats.decoded_audio);
+            if decoded != self.last_decoded || state == "paused" {
+                self.last_progress = Instant::now();
+                self.last_decoded = decoded;
+            }
+            if self.channel_id.is_some() && self.playback_error.is_none() {
+                if matches!(state, "ended" | "stopped") {
+                    self.playback_error = Some(
+                        "The provider ended this broadcast. Retry later or choose another channel."
+                            .into(),
+                    );
+                } else if state == "error" {
+                    self.playback_error = Some("The provider's stream could not be decoded. Retry later or choose another channel.".into());
+                } else if state != "paused"
+                    && self.last_progress.elapsed() >= Duration::from_secs(30)
+                {
+                    self.playback_error = Some("The stream produced no picture or sound for 30 seconds. The channel may be offline. Retry or choose another channel.".into());
+                    (self.api.stop)(self.player as Pointer);
+                }
+            }
+            if self.playback_error.is_some() {
+                state = "error";
+            } else if state == "playing" && decoded == (0, 0) {
+                state = "buffering";
+            }
             PlayerStatus {
                 state: state.into(),
                 channel_id: self.channel_id.clone(),
@@ -277,6 +317,7 @@ impl Player {
                 height,
                 decoded_video: stats.decoded_video,
                 decoded_audio: stats.decoded_audio,
+                error: self.playback_error.clone(),
             }
         }
     }

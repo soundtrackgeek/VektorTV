@@ -3,6 +3,7 @@
 pub mod countries;
 pub mod m3u;
 pub mod models;
+pub mod playback;
 pub mod provider;
 pub mod store;
 pub mod xmltv;

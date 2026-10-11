@@ -139,6 +139,7 @@ export default function PlayerView(p: Props) {
               <p>
                 {failed
                   ? p.error ||
+                    p.status.error ||
                     p.info?.playerError ||
                     "Try again or choose another channel."
                   : demo && p.channel

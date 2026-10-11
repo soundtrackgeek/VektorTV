@@ -57,6 +57,56 @@ final class ViewingRoomUITests: XCTestCase {
         capture("Returned to channels after stop")
     }
 
+    /// Opt-in provider regression checks: availability is intentionally a live
+    /// service observation, not a permanent assertion about these channel names.
+    func testReportedPlaybackChannels() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["VEKTORTV_PLAYBACK_CHECK"] == "1")
+        for name in ["UK| MTV XMAS", "UK| MTV 90S", "NOR| TVNORGE HD", "UK| NOW 70S", "UK| NOW 80S"] {
+            let clearSearch = app.buttons["Clear channel search"]
+            if clearSearch.exists { activate(clearSearch) }
+            let search = app.textFields["Find a channel"]
+            #if os(tvOS)
+            focus(search)
+            XCUIRemote.shared.press(.select)
+            #else
+            search.tap()
+            #endif
+            app.typeText(name)
+            #if os(tvOS)
+            XCUIRemote.shared.press(.menu)
+            #else
+            app.typeText("\n")
+            #endif
+            let channel = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Watch " + name)).firstMatch
+            XCTAssertTrue(channel.waitForExistence(timeout: 15))
+            activate(channel)
+            if name.contains("NOW ") {
+                XCTAssertTrue(app.staticTexts["LIVE"].waitForExistence(timeout: 65), "The fallback must decode output for \(name)")
+                capture("Fallback " + name)
+                activate(app.buttons["Full screen"])
+                XCTAssertTrue(app.descendants(matching: .any)["full-screen-player"].waitForExistence(timeout: 10))
+                // Capture after the presentation animation and video-surface layout.
+                Thread.sleep(forTimeInterval: 2)
+                capture("Fallback fullscreen " + name)
+                #if os(tvOS)
+                XCUIRemote.shared.press(.menu)
+                #else
+                app.buttons["Close full screen"].tap()
+                #endif
+                XCTAssertTrue(app.buttons["Stop playback"].waitForExistence(timeout: 10))
+                XCTAssertTrue(app.staticTexts["LIVE"].exists)
+                Thread.sleep(forTimeInterval: 2)
+                capture("Fallback returned " + name)
+            } else {
+                XCTAssertTrue(app.staticTexts["Playback unavailable"].waitForExistence(timeout: 20))
+                XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'provider returned an ended stream'")).firstMatch.exists)
+                XCTAssertFalse(app.staticTexts["LIVE"].exists)
+                capture("Offline " + name)
+            }
+            activate(app.buttons["Stop playback"])
+        }
+    }
+
     #if os(tvOS)
     func testRemoteScrollingRetainsVisibleFocus() {
         let channel = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch '")).firstMatch

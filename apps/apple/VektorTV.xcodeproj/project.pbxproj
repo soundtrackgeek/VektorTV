@@ -113,6 +113,20 @@
 			"path" = "Resources/CountryAssets-LICENSE.txt";
 			"sourceTree" = "SOURCE_ROOT";
 		};
+		"5D9E1D48963E02B283D0E681" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text";
+			"path" = "Resources/VLCKit-LICENSE.txt";
+			"sourceTree" = "SOURCE_ROOT";
+		};
+		"EAB425DE78627F34DAFDE0A0" = {
+			"isa" = "XCRemoteSwiftPackageReference";
+			"repositoryURL" = "https://github.com/videolan/vlckit.git";
+			"requirement" = {
+				"kind" = "exactVersion";
+				"version" = "4.0.0-a25";
+			};
+		};
 		"4C1F1BE6415C2818C83A5A26" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "folder.assetcatalog";
@@ -218,6 +232,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "2CD584B4A5B9A00ECA1E80DA";
 		};
+		"666F8113B2F909A9207794F5" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "5D9E1D48963E02B283D0E681";
+		};
 		"AF4F9DBFAD7D1E7190609629" = {
 			"isa" = "PBXResourcesBuildPhase";
 			"buildActionMask" = 2147483647;
@@ -226,13 +244,24 @@
 				"F002F7D8EB6D0EA0CB72C814",
 				"CB219E2A8037A7EEAE240EE8",
 				"B57F250F30E9EC572350ADBB",
+				"666F8113B2F909A9207794F5",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"CBC499B55BE3513DE476F155" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "EAB425DE78627F34DAFDE0A0";
+			"productName" = "VLCKit";
+		};
+		"5180399CF52701EA7ECAB345" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "CBC499B55BE3513DE476F155";
 		};
 		"EABE7567AC9FD5C9D6B2EB5E" = {
 			"isa" = "PBXFrameworksBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
+				"5180399CF52701EA7ECAB345",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
@@ -263,8 +292,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.7.0";
-				"CURRENT_PROJECT_VERSION" = "10";
+				"MARKETING_VERSION" = "0.8.0";
+				"CURRENT_PROJECT_VERSION" = "11";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -284,6 +313,7 @@
 				);
 				"OTHER_LDFLAGS" = (
 					"$(inherited)",
+					"-lSystem",
 					"-lvektortv_apple",
 					"-lresolv",
 					"-liconv",
@@ -311,8 +341,8 @@
 				"SDKROOT" = "iphoneos";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
-				"MARKETING_VERSION" = "0.7.0";
-				"CURRENT_PROJECT_VERSION" = "10";
+				"MARKETING_VERSION" = "0.8.0";
+				"CURRENT_PROJECT_VERSION" = "11";
 				"INFOPLIST_FILE" = "Resources/iOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -332,6 +362,7 @@
 				);
 				"OTHER_LDFLAGS" = (
 					"$(inherited)",
+					"-lSystem",
 					"-lvektortv_apple",
 					"-lresolv",
 					"-liconv",
@@ -364,6 +395,9 @@
 			"productReference" = "6C0C9F99F02F92C9AA0D0FCA";
 			"productType" = "com.apple.product-type.application";
 			"buildConfigurationList" = "C45DE37B2C47269EF6EB75BF";
+			"packageProductDependencies" = (
+				"CBC499B55BE3513DE476F155",
+			);
 			"buildPhases" = (
 				"B77185AB4E4A3F43DB463CBF",
 				"C7FE127BA8809D9EC6C908C0",
@@ -573,6 +607,10 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "2CD584B4A5B9A00ECA1E80DA";
 		};
+		"3F030DB2B1DB7BA417F074ED" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "5D9E1D48963E02B283D0E681";
+		};
 		"4FF4E6D3B5E13CF71AD029BF" = {
 			"isa" = "PBXResourcesBuildPhase";
 			"buildActionMask" = 2147483647;
@@ -581,13 +619,24 @@
 				"973CD8717A8AC31E561D3493",
 				"81F72A168AF535B15F8CE92F",
 				"B077E089AFF915883790668E",
+				"3F030DB2B1DB7BA417F074ED",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"2C55593435580CFCC8C9F5A9" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "EAB425DE78627F34DAFDE0A0";
+			"productName" = "VLCKit";
+		};
+		"01142738DF33232FBA94BE1B" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "2C55593435580CFCC8C9F5A9";
 		};
 		"C85607B32635F37815ED08D3" = {
 			"isa" = "PBXFrameworksBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
+				"01142738DF33232FBA94BE1B",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
@@ -618,8 +667,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.7.0";
-				"CURRENT_PROJECT_VERSION" = "10";
+				"MARKETING_VERSION" = "0.8.0";
+				"CURRENT_PROJECT_VERSION" = "11";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -639,6 +688,7 @@
 				);
 				"OTHER_LDFLAGS" = (
 					"$(inherited)",
+					"-lSystem",
 					"-lvektortv_apple",
 					"-lresolv",
 					"-liconv",
@@ -667,8 +717,8 @@
 				"SDKROOT" = "appletvos";
 				"SUPPORTED_PLATFORMS" = "appletvos appletvsimulator";
 				"TARGETED_DEVICE_FAMILY" = "3";
-				"MARKETING_VERSION" = "0.7.0";
-				"CURRENT_PROJECT_VERSION" = "10";
+				"MARKETING_VERSION" = "0.8.0";
+				"CURRENT_PROJECT_VERSION" = "11";
 				"INFOPLIST_FILE" = "Resources/tvOS/Info.plist";
 				"SWIFT_VERSION" = "5.0";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
@@ -688,6 +738,7 @@
 				);
 				"OTHER_LDFLAGS" = (
 					"$(inherited)",
+					"-lSystem",
 					"-lvektortv_apple",
 					"-lresolv",
 					"-liconv",
@@ -721,6 +772,9 @@
 			"productReference" = "0DF823CE837106E5E3A09D60";
 			"productType" = "com.apple.product-type.application";
 			"buildConfigurationList" = "8170B43E49E703E7A71FEB4C";
+			"packageProductDependencies" = (
+				"2C55593435580CFCC8C9F5A9",
+			);
 			"buildPhases" = (
 				"18AB01DF7BFBAFF147A6B301",
 				"77C236EA27FEBFC1C2DF12AA",
@@ -854,6 +908,7 @@
 				"54A57C3147C49F33DE5898B8",
 				"F38D9950AF4F9FA900A7D326",
 				"2CD584B4A5B9A00ECA1E80DA",
+				"5D9E1D48963E02B283D0E681",
 				"4C1F1BE6415C2818C83A5A26",
 				"EA54BDB3E4A5270864951FE9",
 			);
@@ -956,6 +1011,9 @@
 				"C464EFB9313F7C820BFB82F0",
 				"D02D06AFC7E15A7FEFC8AA01",
 				"26CC4548700B2DD0F2A44F3A",
+			);
+			"packageReferences" = (
+				"EAB425DE78627F34DAFDE0A0",
 			);
 		};
 	};

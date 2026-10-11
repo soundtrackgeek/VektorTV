@@ -13,8 +13,14 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo test -p vektortv-core -p vektortv-apple
       - run: cargo clippy -p vektortv-core -p vektortv-apple --all-targets -- -D warnings
-      - run: xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-iOS -destination 'generic/platform=iOS Simulator' ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
-      - run: xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-tvOS -destination 'generic/platform=tvOS Simulator' ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/cache@v4
+        with:
+          path: apps/apple/.derivedData/SourcePackages
+          key: apple-spm-${{ hashFiles('apps/apple/VektorTV.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+      - run: xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-iOS -destination 'generic/platform=iOS Simulator' -derivedDataPath apps/apple/.derivedData/ci -clonedSourcePackagesDirPath apps/apple/.derivedData/SourcePackages -onlyUsePackageVersionsFromResolvedFile ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
+      - run: python3 apps/apple/scripts/check-playback-linkage.py apps/apple/.derivedData/ci/Build/Products/Debug-iphonesimulator/VektorTV-iOS.app
+      - run: xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-tvOS -destination 'generic/platform=tvOS Simulator' -derivedDataPath apps/apple/.derivedData/ci -clonedSourcePackagesDirPath apps/apple/.derivedData/SourcePackages -onlyUsePackageVersionsFromResolvedFile ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
+      - run: python3 apps/apple/scripts/check-playback-linkage.py apps/apple/.derivedData/ci/Build/Products/Debug-appletvsimulator/VektorTV-tvOS.app
   windows:
     runs-on: windows-latest
     steps:

@@ -430,6 +430,12 @@ pub async fn play_channel(app: AppHandle, channel_id: String, request_id: u64) -
 }
 
 fn play_channel_inner(state: &AppState, channel_id: String, request_id: u64) -> Result<()> {
+    // Reserve the request and stop the old channel before a network preflight.
+    // A slower earlier request must never restart after a later stop/switch.
+    lock(&state.player)?
+        .as_mut()
+        .ok_or("The playback engine is unavailable. Restart the app after installing VLC.")?
+        .action("stop", None, Some(request_id))?;
     let connection = lock(&state.connection)?
         .clone()
         .ok_or("Reconnect your IPTV service in Settings to watch.")?;
@@ -450,6 +456,19 @@ fn play_channel_inner(state: &AppState, channel_id: String, request_id: u64) -> 
             .cloned()
             .ok_or("Refresh the playlist before playing this cached channel.")?
     };
+    if connection.kind == "xtream" {
+        // Some providers loop their offline clip at the TS endpoint while the
+        // corresponding HLS playlist correctly declares the broadcast ended.
+        let preflight_url = match channel.stream_id {
+            Some(id) => connection.hls_url(id).map_err(|e| e.to_string())?,
+            None => url.clone(),
+        };
+        tauri::async_runtime::block_on(vektortv_core::playback::check_live_stream(
+            &provider::client().map_err(|e| e.to_string())?,
+            &preflight_url,
+        ))
+        .map_err(|e| e.to_string())?;
+    }
     lock(&state.player)?
         .as_mut()
         .ok_or("The playback engine is unavailable. Restart the app after installing VLC.")?

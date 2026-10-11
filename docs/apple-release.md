@@ -1,5 +1,11 @@
 # Native Apple builds and TestFlight
 
+## Playback compatibility release — 0.8.0 (11)
+
+Version 0.8.0/build 11 adds an automatic VLC fallback for Apple-incompatible streams and shared Xtream offline-stream detection. Released Xcode 26.6 (17F113) is building both Release archives. Distribution is pending; no availability claim is made until both uploads complete Apple processing and appear as Testing in VektorTV Internal.
+
+Archives/exports: `apps/apple/build/0.8.0-11/`. Logs: `/tmp/vektortv-080-{archive,upload}-{ios,tvos}.log`. See [verification.md](verification.md) for provider diagnosis, runtime evidence and platform differences.
+
 ## Desktop popout release — 0.7.0 (10)
 
 **0.7.0 (10) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-01 at approximately **22:24 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.

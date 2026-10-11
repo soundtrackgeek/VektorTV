@@ -1,5 +1,21 @@
 # Verification
 
+## Playback compatibility — 0.8.0 (11)
+
+Checks on 2026-10-11 using released Xcode 26.6 (17F113):
+
+- Live provider probes identified two independent failures. UK MTV XMAS, UK MTV 90S and NOR TVNORGE HD returned a finite HLS playlist with `#EXT-X-ENDLIST`; its sampled video was black and audio digitally silent. TVNorge can also loop that clip through its continuous TS endpoint. Xtream playback now checks the corresponding HLS status on every platform and reports the ended broadcast before playing it.
+- UK NOW 70S and UK NOW 80S carry H.264 video and MPEG Layer II (MP2) audio. Apple playback now falls back from AVPlayer to the pinned official VLCKit package. Simulator checks visibly verified both channels inline, fullscreen and after returning, with decoder output required before LIVE/history. The three offline examples displayed the provider explanation. The normal NRK1 AVPlayer fullscreen/return/stop flow also passed.
+- All 23 Rust core/Apple bridge tests, workspace Clippy with warnings denied, formatting, frontend lint, both frontend tests and TypeScript/production build passed. Local HTTP regression coverage checks ended HLS at a TS address without exposing credentials.
+- Both Apple simulator apps built. A linkage check confirms Rust clock calls bind to Apple's libSystem: VLCKit's legacy replacement otherwise prevents Rust runtime initialization. CI runs this guard after both simulator builds and caches the exact Swift package artifact.
+- The Mac app and ARM64 disk image built. Native Mac NOW 70S displayed live 720 × 576 video. Final offline-status verification, Windows packaging and Apple distribution are in progress; final outcomes will be recorded below.
+
+Intentional differences: compatible Apple streams retain AVPlayer and its system controls, AirPlay and Picture in Picture. VLC fallback uses app pause/stop controls and a stable video view across fullscreen transitions; system PiP/AirPlay are not available for that fallback. Desktop retains its native VLC surface, popout/window controls and OS credential storage. The official VLCKit Swift package is pinned to 4.0.0-a25 (upstream currently publishes its Swift package as a prerelease); its unmodified dynamic framework and LGPL notice are included.
+
+Evidence: `/tmp/vektortv-stream-probe-recheck.log`, `/tmp/vektortv-playback-{workspace-tests,clippy,frontend,mac-bundle,ios-tests,tvos-tests}.log`, simulator xcresult bundles under `apps/apple/.derivedData/playback-{ios,tvos}/Logs/Test/`, inspected captures under `/tmp/vektortv-playback-tvos-stable-captures/`. Provider credentials, authenticated URLs and media samples are excluded from version control.
+
+Limits: physical Apple TV/iPhone playback, hardware remote, audio by listening, AirPlay/PiP, Intel Mac and prolonged viewing remain unverified. Provider availability can change; ended streams require the provider to restore the broadcast. Mac packages are ad-hoc signed and not notarized; Windows packages are unsigned.
+
 ## Desktop popout — 0.7.0
 
 Checks on 2026-10-01 on Apple Silicon macOS, using released Xcode 26.6 (17F113):

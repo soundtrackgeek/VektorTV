@@ -74,6 +74,7 @@ export interface PlayerStatus {
   height: number;
   decodedVideo: number;
   decodedAudio: number;
+  error?: string | null;
 }
 export interface Connection {
   kind: string;

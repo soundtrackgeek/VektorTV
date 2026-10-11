@@ -34,7 +34,9 @@ flags = add("Flags", "PBXFileReference", lastKnownFileType="folder.assetcatalog"
 country_license = add("CountryLicense", "PBXFileReference", lastKnownFileType="text", path="Resources/CountryAssets-LICENSE.txt", sourceTree="SOURCE_ROOT")
 products = []
 targets = []
-resource_refs = [privacy, flags, country_license]
+vlc_license = add("VLCLicense", "PBXFileReference", lastKnownFileType="text", path="Resources/VLCKit-LICENSE.txt", sourceTree="SOURCE_ROOT")
+vlc_package = add("VLCKitPackage", "XCRemoteSwiftPackageReference", repositoryURL="https://github.com/videolan/vlckit.git", requirement={"kind":"exactVersion", "version":"4.0.0-a25"})
+resource_refs = [privacy, flags, country_license, vlc_license]
 for name, sdk, family, deployment, assets in [
     ("VektorTV-iOS", "iphoneos", "1,2", "IPHONEOS_DEPLOYMENT_TARGET", "iOS"),
     ("VektorTV-tvOS", "appletvos", "3", "TVOS_DEPLOYMENT_TARGET", "tvOS"),
@@ -44,27 +46,30 @@ for name, sdk, family, deployment, assets in [
     product = add(name + "Product", "PBXFileReference", explicitFileType="wrapper.application", path=f"{name}.app", sourceTree="BUILT_PRODUCTS_DIR")
     products.append(product)
     source_phase = add(name + "Sources", "PBXSourcesBuildPhase", buildActionMask=2147483647, files=[add(name + source, "PBXBuildFile", fileRef=source) for source in sources], runOnlyForDeploymentPostprocessing=0)
-    resource_phase = add(name + "Resources", "PBXResourcesBuildPhase", buildActionMask=2147483647, files=[add(name + ref, "PBXBuildFile", fileRef=ref) for ref in [asset, privacy, flags, country_license]], runOnlyForDeploymentPostprocessing=0)
-    framework_phase = add(name + "Frameworks", "PBXFrameworksBuildPhase", buildActionMask=2147483647, files=[], runOnlyForDeploymentPostprocessing=0)
+    resource_phase = add(name + "Resources", "PBXResourcesBuildPhase", buildActionMask=2147483647, files=[add(name + ref, "PBXBuildFile", fileRef=ref) for ref in [asset, privacy, flags, country_license, vlc_license]], runOnlyForDeploymentPostprocessing=0)
+    vlc_product = add(name + "VLCKit", "XCSwiftPackageProductDependency", package=vlc_package, productName="VLCKit")
+    framework_phase = add(name + "Frameworks", "PBXFrameworksBuildPhase", buildActionMask=2147483647, files=[add(name + "VLCKitLink", "PBXBuildFile", productRef=vlc_product)], runOnlyForDeploymentPostprocessing=0)
     rust_phase = add(name + "Rust", "PBXShellScriptBuildPhase", buildActionMask=2147483647, files=[], inputPaths=[], outputPaths=["$(BUILT_PRODUCTS_DIR)/libvektortv_apple.a"], runOnlyForDeploymentPostprocessing=0, shellPath="/bin/bash", shellScript='"$SRCROOT/scripts/build-rust.sh"', name="Build shared Rust core", alwaysOutOfDate=1)
     settings = dict(
         PRODUCT_NAME="$(TARGET_NAME)", PRODUCT_BUNDLE_IDENTIFIER="com.soundtrackgeek.vektortv",
         DEVELOPMENT_TEAM="3L5769JKCM", CODE_SIGN_STYLE="Automatic", SDKROOT=sdk,
         SUPPORTED_PLATFORMS="iphoneos iphonesimulator" if sdk == "iphoneos" else "appletvos appletvsimulator",
-        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.7.0", CURRENT_PROJECT_VERSION="10",
+        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.8.0", CURRENT_PROJECT_VERSION="11",
         INFOPLIST_FILE=f"Resources/{assets}/Info.plist", SWIFT_VERSION="5.0",
         SWIFT_STRICT_CONCURRENCY="complete", SWIFT_OBJC_BRIDGING_HEADER="Bridge/BridgingHeader.h",
         ENABLE_USER_SCRIPT_SANDBOXING="NO", ENABLE_BITCODE="NO", GENERATE_INFOPLIST_FILE="NO",
         ASSETCATALOG_COMPILER_APPICON_NAME="AppIcon", ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME="AccentColor",
         LIBRARY_SEARCH_PATHS=["$(inherited)", "$(BUILT_PRODUCTS_DIR)"],
         LD_RUNPATH_SEARCH_PATHS=["$(inherited)", "@executable_path/Frameworks"],
-        OTHER_LDFLAGS=["$(inherited)", "-lvektortv_apple", "-lresolv", "-liconv", "-framework", "Security", "-framework", "SystemConfiguration"],
+        # VLCKit exports legacy libc shims. Bind Rust's clock/OS calls to Apple's
+        # libSystem first, rather than VLC's limited clock_gettime replacement.
+        OTHER_LDFLAGS=["$(inherited)", "-lSystem", "-lvektortv_apple", "-lresolv", "-liconv", "-framework", "Security", "-framework", "SystemConfiguration"],
         SUPPORTS_MACCATALYST="NO", SWIFT_EMIT_LOC_STRINGS="YES",
     )
     settings[deployment] = "18.0"
     if sdk == "appletvos":
         settings["ARCHS"] = "arm64"
-    target = add(name, "PBXNativeTarget", name=name, productName=name, productReference=product, productType="com.apple.product-type.application", buildConfigurationList=configs(name, settings), buildPhases=[rust_phase, source_phase, framework_phase, resource_phase], buildRules=[], dependencies=[])
+    target = add(name, "PBXNativeTarget", name=name, productName=name, productReference=product, productType="com.apple.product-type.application", buildConfigurationList=configs(name, settings), packageProductDependencies=[vlc_product], buildPhases=[rust_phase, source_phase, framework_phase, resource_phase], buildRules=[], dependencies=[])
     targets.append(target)
     test_name = name + "UITests"
     test_product = add(test_name + "Product", "PBXFileReference", explicitFileType="wrapper.cfbundle", path=test_name + ".xctest", sourceTree="BUILT_PRODUCTS_DIR")
@@ -98,7 +103,7 @@ source_group = add("Shared", "PBXGroup", name="Shared", children=sources + [test
 resource_group = add("Resources", "PBXGroup", name="Resources", children=resource_refs, sourceTree="<group>")
 product_group = add("Products", "PBXGroup", name="Products", children=products, sourceTree="<group>")
 main_group = add("Main", "PBXGroup", children=[source_group, resource_group, product_group], sourceTree="<group>")
-project_id = add("Project", "PBXProject", attributes={"LastUpgradeCheck":"2650", "TargetAttributes":{target:{"CreatedOnToolsVersion":"26.5", "DevelopmentTeam":"3L5769JKCM", "ProvisioningStyle":"Automatic"} for target in targets}}, buildConfigurationList=configs("Project", {"CLANG_ENABLE_MODULES":"YES", "CLANG_ENABLE_OBJC_ARC":"YES", "ONLY_ACTIVE_ARCH":"YES"}), compatibilityVersion="Xcode 14.0", developmentRegion="en", hasScannedForEncodings=0, knownRegions=["en", "Base"], mainGroup=main_group, productRefGroup=product_group, projectDirPath="", projectRoot="", targets=targets)
+project_id = add("Project", "PBXProject", attributes={"LastUpgradeCheck":"2650", "TargetAttributes":{target:{"CreatedOnToolsVersion":"26.5", "DevelopmentTeam":"3L5769JKCM", "ProvisioningStyle":"Automatic"} for target in targets}}, buildConfigurationList=configs("Project", {"CLANG_ENABLE_MODULES":"YES", "CLANG_ENABLE_OBJC_ARC":"YES", "ONLY_ACTIVE_ARCH":"YES"}), compatibilityVersion="Xcode 14.0", developmentRegion="en", hasScannedForEncodings=0, knownRegions=["en", "Base"], mainGroup=main_group, productRefGroup=product_group, projectDirPath="", projectRoot="", targets=targets, packageReferences=[vlc_package])
 
 def serialize(value, depth=0):
     indent = "\t" * depth

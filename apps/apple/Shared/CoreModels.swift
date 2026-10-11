@@ -81,6 +81,11 @@ struct AppFailure: LocalizedError, Sendable {
     var errorDescription: String? { message }
 }
 
+struct PlaybackSource: Decodable, Sendable {
+    let url: String
+    let fallbackUrl: String
+}
+
 enum LibrarySection: String, CaseIterable, Identifiable {
     case live = "Live TV", favorites = "Favorites", history = "Recently watched"
     var id: String { rawValue }
