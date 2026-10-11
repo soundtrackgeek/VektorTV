@@ -298,10 +298,12 @@ struct NativePlayer: UIViewControllerRepresentable {
         init(onExit: @escaping () -> Void, onZap: @escaping (Int) async -> Bool) { self.onExit = onExit; self.onZap = onZap }
         #if os(tvOS)
         func playerViewController(_ playerViewController: AVPlayerViewController, skipToNextChannel completion: @escaping (Bool) -> Void) {
-            Task { completion(await onZap(1)) }
+            // AVKit dismisses its channel interstitial from this completion.
+            // An unisolated Task resumes off the main thread after onZap returns.
+            Task { @MainActor in completion(await onZap(1)) }
         }
         func playerViewController(_ playerViewController: AVPlayerViewController, skipToPreviousChannel completion: @escaping (Bool) -> Void) {
-            Task { completion(await onZap(-1)) }
+            Task { @MainActor in completion(await onZap(-1)) }
         }
         func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool {
             // SwiftUI owns the presentation. AVKit must not dismiss the hosting controller itself.

@@ -163,7 +163,7 @@ const previewInfo: AppInfo = {
   playerAvailable: true,
   playerError: null,
   progress: { phase: "", active: false, message: "" },
-  version: "0.10.0",
+  version: "0.10.1",
   platform: "preview",
   credentialStorage: "the operating system credential store",
 };

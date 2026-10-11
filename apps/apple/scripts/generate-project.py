@@ -22,6 +22,7 @@ def configs(name, settings):
     for config in ["Debug", "Release"]:
         values = dict(settings)
         values.update(SWIFT_OPTIMIZATION_LEVEL="-Onone" if config == "Debug" else "-O",
+                      ENABLE_TESTABILITY="YES" if config == "Debug" else "NO",
                       DEBUG_INFORMATION_FORMAT="dwarf" if config == "Debug" else "dwarf-with-dsym",
                       SWIFT_ACTIVE_COMPILATION_CONDITIONS="DEBUG" if config == "Debug" else "")
         ids.append(add(name + config, "XCBuildConfiguration", name=config, buildSettings=values))
@@ -29,6 +30,7 @@ def configs(name, settings):
 
 sources = [add(str(path), "PBXFileReference", lastKnownFileType="sourcecode.swift", path=str(path.relative_to(root)), sourceTree="SOURCE_ROOT") for path in sorted((root / "Shared").glob("*.swift"))]
 test_source = add("UITestSource", "PBXFileReference", lastKnownFileType="sourcecode.swift", path="UITests/ViewingRoomUITests.swift", sourceTree="SOURCE_ROOT")
+unit_test_source = add("UnitTestSource", "PBXFileReference", lastKnownFileType="sourcecode.swift", path="Tests/NativePlayerTests.swift", sourceTree="SOURCE_ROOT")
 privacy = add("Privacy", "PBXFileReference", lastKnownFileType="text.xml", path="Resources/PrivacyInfo.xcprivacy", sourceTree="SOURCE_ROOT")
 flags = add("Flags", "PBXFileReference", lastKnownFileType="folder.assetcatalog", path="Resources/Flags.xcassets", sourceTree="SOURCE_ROOT")
 country_license = add("CountryLicense", "PBXFileReference", lastKnownFileType="text", path="Resources/CountryAssets-LICENSE.txt", sourceTree="SOURCE_ROOT")
@@ -54,7 +56,7 @@ for name, sdk, family, deployment, assets in [
         PRODUCT_NAME="$(TARGET_NAME)", PRODUCT_BUNDLE_IDENTIFIER="com.soundtrackgeek.vektortv",
         DEVELOPMENT_TEAM="3L5769JKCM", CODE_SIGN_STYLE="Automatic", SDKROOT=sdk,
         SUPPORTED_PLATFORMS="iphoneos iphonesimulator" if sdk == "iphoneos" else "appletvos appletvsimulator",
-        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.10.0", CURRENT_PROJECT_VERSION="13",
+        TARGETED_DEVICE_FAMILY=family, MARKETING_VERSION="0.10.1", CURRENT_PROJECT_VERSION="14",
         INFOPLIST_FILE=f"Resources/{assets}/Info.plist", SWIFT_VERSION="5.0",
         SWIFT_STRICT_CONCURRENCY="complete", SWIFT_OBJC_BRIDGING_HEADER="Bridge/BridgingHeader.h",
         ENABLE_USER_SCRIPT_SANDBOXING="NO", ENABLE_BITCODE="NO", GENERATE_INFOPLIST_FILE="NO",
@@ -85,13 +87,29 @@ for name, sdk, family, deployment, assets in [
         buildPhases=[test_sources], buildRules=[], dependencies=[dependency])
     targets.append(test_target)
     test_reference = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{test_target}" BuildableName="{test_name}.xctest" BlueprintName="{test_name}" ReferencedContainer="container:VektorTV.xcodeproj"/>'
+    testables = f'<TestableReference skipped="NO">{test_reference}</TestableReference>'
+    if sdk == "appletvos":
+        unit_name = name + "Tests"
+        unit_product = add(unit_name + "Product", "PBXFileReference", explicitFileType="wrapper.cfbundle", path=unit_name + ".xctest", sourceTree="BUILT_PRODUCTS_DIR")
+        products.append(unit_product)
+        unit_sources = add(unit_name + "Sources", "PBXSourcesBuildPhase", buildActionMask=2147483647, files=[add(unit_name + "Source", "PBXBuildFile", fileRef=unit_test_source)], runOnlyForDeploymentPostprocessing=0)
+        unit_settings = dict(PRODUCT_NAME="$(TARGET_NAME)", PRODUCT_BUNDLE_IDENTIFIER="com.soundtrackgeek.vektortv.tvos-tests", SDKROOT=sdk,
+            DEVELOPMENT_TEAM="3L5769JKCM", CODE_SIGN_STYLE="Automatic", TARGETED_DEVICE_FAMILY=family,
+            SWIFT_VERSION="5.0", GENERATE_INFOPLIST_FILE="YES", TVOS_DEPLOYMENT_TARGET="18.0",
+            TEST_HOST=f"$(BUILT_PRODUCTS_DIR)/{name}.app/{name}", BUNDLE_LOADER="$(TEST_HOST)")
+        unit_target = add(unit_name, "PBXNativeTarget", name=unit_name, productName=unit_name, productReference=unit_product,
+            productType="com.apple.product-type.bundle.unit-test", buildConfigurationList=configs(unit_name, unit_settings),
+            buildPhases=[unit_sources], buildRules=[], dependencies=[dependency])
+        targets.append(unit_target)
+        unit_reference = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{unit_target}" BuildableName="{unit_name}.xctest" BlueprintName="{unit_name}" ReferencedContainer="container:VektorTV.xcodeproj"/>'
+        testables += f'<TestableReference skipped="NO">{unit_reference}</TestableReference>'
     schemes = project / "xcshareddata/xcschemes"
     schemes.mkdir(parents=True, exist_ok=True)
     reference = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{target}" BuildableName="{name}.app" BlueprintName="{name}" ReferencedContainer="container:VektorTV.xcodeproj"/>'
     (schemes / f"{name}.xcscheme").write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion="2650" version="1.3">
  <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">{reference}</BuildActionEntry></BuildActionEntries></BuildAction>
- <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO">{test_reference}</TestableReference></Testables></TestAction>
+ <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables>{testables}</Testables></TestAction>
  <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES"><BuildableProductRunnable runnableDebuggingMode="0">{reference}</BuildableProductRunnable></LaunchAction>
  <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES"><BuildableProductRunnable runnableDebuggingMode="0">{reference}</BuildableProductRunnable></ProfileAction>
  <AnalyzeAction buildConfiguration="Debug"/>
@@ -99,7 +117,7 @@ for name, sdk, family, deployment, assets in [
 </Scheme>
 ''')
 
-source_group = add("Shared", "PBXGroup", name="Shared", children=sources + [test_source], sourceTree="<group>")
+source_group = add("Shared", "PBXGroup", name="Shared", children=sources + [test_source, unit_test_source], sourceTree="<group>")
 resource_group = add("Resources", "PBXGroup", name="Resources", children=resource_refs, sourceTree="<group>")
 product_group = add("Products", "PBXGroup", name="Products", children=products, sourceTree="<group>")
 main_group = add("Main", "PBXGroup", children=[source_group, resource_group, product_group], sourceTree="<group>")

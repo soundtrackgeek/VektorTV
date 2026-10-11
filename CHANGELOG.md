@@ -2,6 +2,17 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.10.1] - 2026-10-11
+
+### Fixed
+
+- Prevent Apple TV native fullscreen channel-swiping crashes by returning AVKit's next/previous completion handlers to the main actor after asynchronous channel lookup and stream startup.
+- Add a tvOS callback regression covering both directions and successful/failed transitions after suspension. The 0.10.0 handlers fail all four main-thread assertions; the corrected handlers pass.
+
+### Changed
+
+- Align all app versions at 0.10.1; increment the Apple build to 14. Desktop scoped zapping behavior is unchanged by this tvOS-specific fix.
+
 ## [0.10.0] - 2026-10-11
 
 ### Added

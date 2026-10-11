@@ -1,10 +1,23 @@
 # Native Apple builds and TestFlight
 
+## Apple TV swipe crash fix — 0.10.1 (14)
+
+Distribution in progress. Both Apple apps use marketing version **0.10.1**, build **14**; final archives and TestFlight availability will be recorded here after verification and upload.
+
+The physical Apple TV crash at 18:18:44 on 0.10.0 (13), while swiping from NOR| NRK1 NORDNYTT HD to NOR| NRK2 HD, aborted in UIKit while AVKit dismissed its channel interstitial on a background thread. Both delegate completions now return on MainActor. The hosted tvOS regression covers next/previous and success/failure after async suspension; the old handlers failed all four main-thread assertions and the fix passed.
+
 ## Channel zapping release — 0.10.0 (13)
 
-Released Xcode 26.6 (17F113) built both iOS/iPadOS and tvOS Release archives on 2026-10-11. Upload, Apple processing and VektorTV Internal availability checks are in progress. The builds are not yet confirmed available to testers.
+**0.10.0 (13) is available in VektorTV Internal on both iOS/iPadOS and tvOS.** The group's Builds page was visibly verified as **Testing** for both platforms on 2026-10-11 at approximately **18:16 Europe/Oslo**. Released Xcode **26.6 (17F113)** built both final Release archives; automatic App Store distribution exports/uploads succeeded and Apple completed processing.
 
-Archives: `apps/apple/build/0.10.0-13/`. Logs: `/tmp/vektortv-0100-archive-{ios,tvos}.log`. See [verification.md](verification.md) for scoped channel navigation and platform verification.
+| Platform | Version / build | Upload accepted (Europe/Oslo) | Internal status | App Store Connect build |
+| --- | --- | --- | --- | --- |
+| iOS / iPadOS | 0.10.0 (13) | 2026-10-11 18:09:53 | Testing — VektorTV Internal | [iOS build 13](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/ios/0f36d46f-c742-4a60-becc-31e40707a109) |
+| tvOS | 0.10.0 (13) | 2026-10-11 18:09:36 | Testing — VektorTV Internal | [tvOS build 13](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/tvos/f71f0f38-6cdb-4750-97fa-3ac2ebcb2939) |
+
+Both archives include scoped channel navigation, native AVKit channel-flipping delegates and the final stable VLC remote surface during startup. Manifest version/build checks and both playback linkage guards passed. Category/search and Favorites zapping tests passed on iPhone, iPad and Apple TV; the tvOS VLC fullscreen test passed repeated right/left input while connecting. Desktop packaging and native Mac verification are recorded in [verification.md](verification.md).
+
+Archives/exports: `apps/apple/build/0.10.0-13/`, including `VektorTV-{iOS,tvOS}-final.xcarchive`. Logs: `/tmp/vektortv-0100-archive-{ios,tvos}-final.log` and `/tmp/vektortv-0100-upload-{ios,tvos}.log`.
 
 ## Favorites release — 0.9.0 (12)
 

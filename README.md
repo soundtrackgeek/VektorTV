@@ -2,7 +2,7 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI, AVKit/AVPlayer and an automatic VLCKit playback fallback. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.10.0
+## Features in 0.10.1
 
 The Tauri desktop client includes:
 
@@ -99,7 +99,7 @@ Every version bump must include Release archives and TestFlight uploads for both
 
 The shared schemes include XCTest UI integration tests. Configure the simulator account with the development launcher first, then run `xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-iOS -destination 'platform=iOS Simulator,id=<simulator-udid>' -parallel-testing-enabled NO test`; use scheme `VektorTV-tvOS` and platform `tvOS Simulator` for Apple TV. Tests skip without a configured account and require the test provider's NRK1 channel for live playback. They restore the favorite state after checking it. Current results and coverage limits are in [docs/verification.md](docs/verification.md).
 
-The **0.10.0 (13)** release is being verified and uploaded; see [release status](docs/apple-release.md). The earlier iOS and tvOS **0.9.0 (12)** builds are available in the **VektorTV Internal** TestFlight group. Both completed Apple processing and show **Testing** on 2026-10-11. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
+The iOS/iPadOS and tvOS **0.10.1 (14)** swipe-crash fix is being verified for TestFlight distribution. Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
 
 ## Run the desktop app
 
