@@ -23,6 +23,15 @@ final class PlaybackStore {
     @ObservationIgnored private var navigationRequest = 0
     @ObservationIgnored private var navigationTask: Task<Channel?, Error>?
 
+    init() {
+        // VLCKit 4 defaults to synchronous decoder-thread callbacks. A pending
+        // time notification can become the player's last owner during stop;
+        // dealloc then re-enters VLC's already-held player lock and aborts.
+        // Configure asynchronous main-queue delivery before creating any VLC
+        // objects, also keeping its state/timer notifications on the UI thread.
+        VLCLibrary.sharedEventsConfiguration = VLCEventsLegacyConfiguration()
+    }
+
     func play(_ channel: Channel, library: LibraryStore, keepingScope: Bool = false) async {
         navigationGeneration += 1
         navigationTask?.cancel()

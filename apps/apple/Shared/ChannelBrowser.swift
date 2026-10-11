@@ -62,72 +62,76 @@ struct ChannelBrowser: View {
                     ProgressView("Loading channels…").frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        VStack(spacing: 0) {
                             if !wide && !guide && playback.channel != nil {
                                 ViewingRoom(library: library, playback: playback, compact: true,
                                     availableHeight: nil, schedule: schedule)
                                     .id("player")
                             }
                             if !wide { browserControls.id("browser-controls") }
-                            Color.clear.frame(height: 1).id("channels-start")
-                            if library.isLoading && library.channels.isEmpty {
-                                ProgressView("Loading channels…").padding()
-                            } else if library.channels.isEmpty {
-                                ContentUnavailableView("No channels here", systemImage: library.section.symbol,
-                                    description: Text(library.section == .favorites ? "Save a channel with its star or channel menu." : "Try another search or channel group."))
-                            }
-                            ForEach(visibleChannels) { channel in
-                                ChannelRow(channel: channel,
-                                    selected: guide ? selectedGuideID == channel.id : playback.channel?.id == channel.id,
-                                    guide: guide,
-                                    moving: movingID == channel.id,
-                                    arranging: movingID != nil,
-                                    select: {
-                                        if movingID != nil {
-                                            #if os(iOS)
-                                            move(to: channel.id)
-                                            #endif
-                                            drop()
-                                        }
-                                        else if guide { schedule(channel) }
-                                        else {
-                                            searchFocused = false
-                                            Task { await playback.play(channel, library: library) }
-                                        }
-                                    },
-                                    favorite: {
-                                        Task {
-                                            if await library.toggleFavorite(channel), playback.channel?.id == channel.id {
-                                                playback.channel?.favorite = !channel.favorite
-                                            }
-                                        }
-                                    },
-                                    schedule: { schedule(channel) },
-                                    arrange: library.section == .favorites && movingID == nil ? { pickUp(channel) } : nil,
-                                    focus: $channelFocus,
-                                    onFocus: {
-                                        #if os(tvOS)
-                                        if let movingID, channel.id != movingID {
-                                            move(to: channel.id)
-                                            Task { @MainActor in
-                                                await Task.yield()
-                                                channelFocus = movingID
-                                            }
-                                        }
-                                        #endif
-                                        scroll.scrollTo(movingID ?? channel.id, anchor: .center)
-                                    })
-                                    .disabled(savingOrder)
-                            }
-                            if library.channels.count < library.total {
-                                Button { Task { await library.reload(more: true) } } label: {
-                                    if library.isLoading { ProgressView() }
-                                    else { Text("Load more · \(library.channels.count.formatted()) of \(library.total.formatted())") }
+                            // Keep the variable-height player and controls out of lazy
+                            // placement caching when returning to the channel list.
+                            LazyVStack(spacing: 0) {
+                                Color.clear.frame(height: 1).id("channels-start")
+                                if library.isLoading && library.channels.isEmpty {
+                                    ProgressView("Loading channels…").padding()
+                                } else if library.channels.isEmpty {
+                                    ContentUnavailableView("No channels here", systemImage: library.section.symbol,
+                                        description: Text(library.section == .favorites ? "Save a channel with its star or channel menu." : "Try another search or channel group."))
                                 }
-                                .buttonStyle(CinemaButtonStyle()).font(Theme.detailFont)
-                                .disabled(library.isLoading).padding(.vertical, 16)
-                                .task(id: library.channels.count) {
-                                    if guide && !library.isLoading { await library.reload(more: true) }
+                                ForEach(visibleChannels) { channel in
+                                    ChannelRow(channel: channel,
+                                        selected: guide ? selectedGuideID == channel.id : playback.channel?.id == channel.id,
+                                        guide: guide,
+                                        moving: movingID == channel.id,
+                                        arranging: movingID != nil,
+                                        select: {
+                                            if movingID != nil {
+                                                #if os(iOS)
+                                                move(to: channel.id)
+                                                #endif
+                                                drop()
+                                            }
+                                            else if guide { schedule(channel) }
+                                            else {
+                                                searchFocused = false
+                                                Task { await playback.play(channel, library: library) }
+                                            }
+                                        },
+                                        favorite: {
+                                            Task {
+                                                if await library.toggleFavorite(channel), playback.channel?.id == channel.id {
+                                                    playback.channel?.favorite = !channel.favorite
+                                                }
+                                            }
+                                        },
+                                        schedule: { schedule(channel) },
+                                        arrange: library.section == .favorites && movingID == nil ? { pickUp(channel) } : nil,
+                                        focus: $channelFocus,
+                                        onFocus: {
+                                            #if os(tvOS)
+                                            if let movingID, channel.id != movingID {
+                                                move(to: channel.id)
+                                                Task { @MainActor in
+                                                    await Task.yield()
+                                                    channelFocus = movingID
+                                                }
+                                            }
+                                            #endif
+                                            scroll.scrollTo(movingID ?? channel.id, anchor: .center)
+                                        })
+                                        .disabled(savingOrder)
+                                }
+                                if library.channels.count < library.total {
+                                    Button { Task { await library.reload(more: true) } } label: {
+                                        if library.isLoading { ProgressView() }
+                                        else { Text("Load more · \(library.channels.count.formatted()) of \(library.total.formatted())") }
+                                    }
+                                    .buttonStyle(CinemaButtonStyle()).font(Theme.detailFont)
+                                    .disabled(library.isLoading).padding(.vertical, 16)
+                                    .task(id: library.channels.count) {
+                                        if guide && !library.isLoading { await library.reload(more: true) }
+                                    }
                                 }
                             }
                         }
@@ -148,7 +152,8 @@ struct ChannelBrowser: View {
                         guard !wide, !guide, selected != nil else { return }
                         Task { @MainActor in
                             await Task.yield()
-                            withAnimation { scroll.scrollTo("player", anchor: .top) }
+                            guard playback.channel?.id == selected else { return }
+                            scroll.scrollTo("player", anchor: .top)
                         }
                     }
                 }

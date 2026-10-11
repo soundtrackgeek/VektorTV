@@ -250,6 +250,39 @@ final class ViewingRoomUITests: XCTestCase {
         }
     }
 
+    func testDiscoverySwitchWhilePlaying() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["VEKTORTV_DISCOVERY_CHECK"] == "1")
+        func select(_ name: String) {
+            let clear = app.buttons["Clear channel search"]
+            if clear.exists { activate(clear) }
+            let search = app.textFields["Find a channel"]
+            #if os(tvOS)
+            focus(search)
+            XCUIRemote.shared.press(.select)
+            app.typeText(name)
+            XCUIRemote.shared.press(.menu)
+            #else
+            search.tap()
+            search.typeText(name + "\n")
+            #endif
+            let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Watch " + name)).firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 15))
+            activate(row)
+            assertPlaying(name)
+        }
+        for name in ["D+| DISCOVERY HISTORY", "D+| DMAX"] {
+            select(name)
+            XCTAssertTrue(app.staticTexts["LIVE"].waitForExistence(timeout: 65))
+            capture("Discovery before active switch " + name)
+            // Select directly while the decoder runs, without Stop or waiting for failure.
+            select("NOR| NRK1 HD")
+            XCTAssertTrue(app.staticTexts["LIVE"].waitForExistence(timeout: 65))
+            XCTAssertTrue(app.staticTexts["Your channels"].exists)
+            capture("Recovered after active switch " + name)
+            activate(app.buttons["Stop playback"])
+        }
+    }
+
     #if os(tvOS)
     func testRemoteScrollingRetainsVisibleFocus() {
         let channel = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Watch '")).firstMatch

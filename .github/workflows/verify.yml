@@ -21,7 +21,7 @@ jobs:
       - run: python3 apps/apple/scripts/check-playback-linkage.py apps/apple/.derivedData/ci/Build/Products/Debug-iphonesimulator/VektorTV-iOS.app
       - run: xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-tvOS -destination 'generic/platform=tvOS Simulator' -derivedDataPath apps/apple/.derivedData/ci -clonedSourcePackagesDirPath apps/apple/.derivedData/SourcePackages -onlyUsePackageVersionsFromResolvedFile ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
       - run: python3 apps/apple/scripts/check-playback-linkage.py apps/apple/.derivedData/ci/Build/Products/Debug-appletvsimulator/VektorTV-tvOS.app
-      - name: Verify tvOS channel-flip callback threading
+      - name: Verify tvOS playback callbacks and active VLC teardown
         run: |
           ZAP_TV_SIM_ID=$(python3 -c 'import json, subprocess; d=json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "--json"])); print(next(v["udid"] for k, vs in d["devices"].items() if ".tvOS-" in k for v in vs if v["isAvailable"]))')
           xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-tvOS -destination "platform=tvOS Simulator,id=$ZAP_TV_SIM_ID" -derivedDataPath apps/apple/.derivedData/ci -clonedSourcePackagesDirPath apps/apple/.derivedData/SourcePackages -onlyUsePackageVersionsFromResolvedFile -parallel-testing-enabled NO -only-testing:VektorTV-tvOSTests test

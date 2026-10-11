@@ -1,5 +1,9 @@
 # Native Apple builds and TestFlight
 
+## Active VLC teardown crash fix — 0.10.2 (15)
+
+The native project and maintained desktop versions are aligned at **0.10.2**, with Apple build **15**. The physical Apple TV crash at 18:48:33 Europe/Oslo on 2026-10-11 confirms a VLCKit decoder-thread teardown abort, independent of the previously fixed AVKit swipe completion. VLC events now dispatch asynchronously to the main queue on iOS/iPadOS and tvOS. Verification and distribution are in progress; **0.10.2 (15) is not yet confirmed available in TestFlight**. See [verification.md](verification.md) for the regression and provider-audio boundaries.
+
 ## Apple TV swipe crash fix — 0.10.1 (14)
 
 Both released-Xcode **26.6 (17F113)** Release archives passed version/build and playback linkage checks. Apple accepted uploads of **0.10.1 (14)** at **18:35:04 iOS** and **18:34:34 tvOS Europe/Oslo** on 2026-10-11. Both completed processing and were visibly verified as **Testing in VektorTV Internal** at approximately **18:38 Europe/Oslo**. Archives/exports: `apps/apple/build/0.10.1-14/`; logs: `/tmp/vektortv-0101-archive-{ios,tvos}-final.log` and `/tmp/vektortv-0101-upload-{ios,tvos}.log`.

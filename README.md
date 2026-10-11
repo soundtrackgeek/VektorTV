@@ -2,7 +2,7 @@
 
 A personal IPTV player for **Windows 11 (64-bit), macOS 12+, iOS/iPadOS 18+ and tvOS 18+**. Windows and Mac use Tauri 2 and React/TypeScript; Apple devices use native SwiftUI, AVKit/AVPlayer and an automatic VLCKit playback fallback. Both share the portable Rust core. The Cinema interface puts live video first: a dark viewing room, teal accents, a compact channel browser and a programme guide.
 
-## Features in 0.10.1
+## Features in 0.10.2
 
 The Tauri desktop client includes:
 
@@ -99,7 +99,7 @@ Every version bump must include Release archives and TestFlight uploads for both
 
 The shared schemes include XCTest UI integration tests. Configure the simulator account with the development launcher first, then run `xcodebuild -project apps/apple/VektorTV.xcodeproj -scheme VektorTV-iOS -destination 'platform=iOS Simulator,id=<simulator-udid>' -parallel-testing-enabled NO test`; use scheme `VektorTV-tvOS` and platform `tvOS Simulator` for Apple TV. Tests skip without a configured account and require the test provider's NRK1 channel for live playback. They restore the favorite state after checking it. Current results and coverage limits are in [docs/verification.md](docs/verification.md).
 
-The iOS/iPadOS and tvOS **0.10.1 (14)** swipe-crash fix is available in the **VektorTV Internal** TestFlight group. Both completed Apple processing and show **Testing** on 2026-10-11. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
+The iOS/iPadOS and tvOS **0.10.2 (15)** VLC teardown fix is being prepared for TestFlight. The previous **0.10.1 (14)** swipe-crash fix is available in the **VektorTV Internal** group. [TestFlight builds](https://appstoreconnect.apple.com/teams/b1e1e3ed-bd76-448e-bf6c-7211ea008199/apps/6817723723/testflight/groups/ee71aad3-175f-47d8-bac5-d0c32917045a/builds). Enter your own IPTV credentials on each device. Release evidence is recorded in [docs/apple-release.md](docs/apple-release.md). Xcode Cloud scripts are included for future workflow setup; builds are uploaded locally.
 
 ## Run the desktop app
 
@@ -193,6 +193,6 @@ src                     React/TypeScript interface
 
 The shared core has no Tauri, Win32, UI or playback-engine dependencies. Native platform shells own credentials and playback; the core owns metadata and business logic. Sensitive M3U stream locations remain in an in-memory map. Xtream playback locations are constructed on demand from the keyring-held connection. Stable channel IDs are scoped to the service/account to avoid collisions when switching providers.
 
-`crates/vektortv-apple` exposes a narrow, owned-JSON C ABI to `apps/apple`, which contains the SwiftUI shells, Keychain storage and AVPlayer playback with an automatic VLCKit fallback. Calls run on background queues. Rust locks SQLite only during metadata operations; guide downloads do not hold the library lock. Account namespaces and channel imports commit atomically, and account changes invalidate pending guide/playlist responses. Xtream playback checks the `.m3u8` manifest for an ended broadcast on every platform. Apple tries HLS with AVPlayer, then the `.ts` stream with VLC when necessary; desktop uses its native VLC engine. M3U stream URLs are used as supplied. Playback requires decoded output before LIVE/history and reports a retryable error when neither engine can start.
+`crates/vektortv-apple` exposes a narrow, owned-JSON C ABI to `apps/apple`, which contains the SwiftUI shells, Keychain storage and AVPlayer playback with an automatic VLCKit fallback. Calls run on background queues. Rust locks SQLite only during metadata operations; guide downloads do not hold the library lock. Account namespaces and channel imports commit atomically, and account changes invalidate pending guide/playlist responses. Xtream playback checks the `.m3u8` manifest for an ended broadcast on every platform. Apple tries HLS with AVPlayer, then the `.ts` stream with VLC when necessary; desktop uses its native VLC engine. Apple VLCKit callbacks run asynchronously on the main queue so switching/stopping an active fallback cannot destroy its player inside a locked decoder callback. M3U stream URLs are used as supplied. Playback requires decoded output before LIVE/history and reports a retryable error when neither engine can start.
 
 See [docs/app-brief.md](docs/app-brief.md), [docs/design/direction.md](docs/design/direction.md) and [docs/verification.md](docs/verification.md).

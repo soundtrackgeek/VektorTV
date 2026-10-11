@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. Versions follow semantic versioning.
 
+## [0.10.2] - 2026-10-11
+
+### Fixed
+
+- Prevent iOS/iPadOS and Apple TV crashes when switching away from, stopping or failing an active VLC fallback stream. Deliver VLCKit events asynchronously on the main queue so player destruction cannot re-enter the decoder's held lock.
+- Add a provider-independent active VLC playback/teardown regression and opt-in Discovery History/DMAX-to-NRK switching checks.
+- Keep the compact iPhone player and browser controls outside the lazy channel rows to prevent a SwiftUI layout stall when scrolling back to search during playback.
+
+### Changed
+
+- Align all app versions at 0.10.2; increment the Apple build to 15. Desktop uses libVLC directly and does not share the VLCKit callback failure.
+
 ## [0.10.1] - 2026-10-11
 
 ### Fixed
